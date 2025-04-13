@@ -404,3 +404,146 @@ export function getDataSample(data: any[], sampleSize = 5) {
   if (!data || data.length === 0) return [];
   return data.slice(0, sampleSize);
 }
+
+// New function to simulate Python-powered AI analysis
+export function simulatePythonAnalysis(prompt: string, data: any[]) {
+  // Simulate delay for Python processing
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const lowerPrompt = prompt.toLowerCase();
+      const columnTypes = detectColumnTypes(data);
+      const numericColumns = getNumericColumns(data);
+      const categoricalColumns = getCategoricalColumns(data);
+      
+      // Simulate different ML models based on the prompt
+      if (lowerPrompt.includes('cluster') || lowerPrompt.includes('k-means')) {
+        resolve({
+          type: 'clustering',
+          title: 'K-Means Clustering Analysis',
+          description: `Applied K-means clustering to identify natural groupings in your data. Found 3 distinct clusters based on the patterns in ${numericColumns.slice(0, 2).join(', ')}. The largest cluster contains 42% of your data points.`,
+          pythonCode: `import pandas as pd\nfrom sklearn.cluster import KMeans\nfrom sklearn.preprocessing import StandardScaler\n\n# Load data into pandas DataFrame\ndf = pd.DataFrame(data)\n\n# Select numeric features for clustering\nfeatures = df[[${numericColumns.slice(0, 2).map(col => `"${col}"`).join(', ')}]]\n\n# Standardize features\nscaler = StandardScaler()\nscaled_features = scaler.fit_transform(features)\n\n# Apply K-means clustering\nkmeans = KMeans(n_clusters=3, random_state=42)\ndf['cluster'] = kmeans.fit_predict(scaled_features)\n\n# Analyze clusters\ncluster_stats = df.groupby('cluster').agg({'count', 'mean'})\nprint(cluster_stats)`,
+          modelInfo: 'Used scikit-learn KMeans with k=3, StandardScaler for feature normalization',
+          chartType: 'pie',
+          data: [
+            { name: 'Cluster 1', value: 42 },
+            { name: 'Cluster 2', value: 35 },
+            { name: 'Cluster 3', value: 23 }
+          ],
+          chartConfig: {
+            title: 'Distribution of Data Clusters',
+            description: 'Percentage of data points in each cluster'
+          }
+        });
+      }
+      
+      else if (lowerPrompt.includes('predict') || lowerPrompt.includes('regression') || lowerPrompt.includes('forecast')) {
+        const targetColumn = numericColumns[0];
+        const featureColumn = numericColumns.length > 1 ? numericColumns[1] : categoricalColumns[0];
+        
+        resolve({
+          type: 'prediction',
+          title: `Predictive Model for ${targetColumn}`,
+          description: `Created a Random Forest regression model to predict ${targetColumn} based on available features. The model achieved an R² score of 0.83, indicating good predictive performance. The most important feature was ${featureColumn}.`,
+          pythonCode: `import pandas as pd\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import r2_score\nimport numpy as np\n\n# Prepare data\ndf = pd.DataFrame(data)\n\n# Handle missing values\ndf = df.fillna(df.mean())\n\n# Define features and target\nX = df.drop('${targetColumn}', axis=1)\nX = pd.get_dummies(X) # Convert categorical variables\ny = df['${targetColumn}']\n\n# Split data\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n\n# Train model\nmodel = RandomForestRegressor(n_estimators=100, random_state=42)\nmodel.fit(X_train, y_train)\n\n# Evaluate model\ny_pred = model.predict(X_test)\nr2 = r2_score(y_test, y_pred)\nprint(f"R² Score: {r2}")\n\n# Feature importance\nfeature_importance = pd.DataFrame({'feature': X.columns, 'importance': model.feature_importances_})\nprint(feature_importance.sort_values('importance', ascending=False))`,
+          modelInfo: 'Used scikit-learn RandomForestRegressor with 100 estimators, 80/20 train-test split',
+          chartType: 'bar',
+          data: [
+            { feature: featureColumn, importance: 0.42 },
+            { feature: categoricalColumns[0], importance: 0.28 },
+            { feature: numericColumns.length > 2 ? numericColumns[2] : 'other_feature', importance: 0.18 },
+            { feature: 'Other Features', importance: 0.12 },
+          ],
+          chartConfig: {
+            xKey: 'feature',
+            yKey: 'importance',
+            title: 'Feature Importance in Prediction Model',
+            description: 'Relative importance of each feature in predicting the target variable'
+          }
+        });
+      }
+      
+      else if (lowerPrompt.includes('anomaly') || lowerPrompt.includes('outlier')) {
+        resolve({
+          type: 'anomaly',
+          title: 'Anomaly Detection Results',
+          description: `Used Isolation Forest algorithm to detect anomalies in your data. Identified ${Math.floor(data.length * 0.03)} potential anomalies (approximately 3% of your dataset). These anomalies significantly deviate from the normal patterns and may represent errors or special cases worth investigating.`,
+          pythonCode: `import pandas as pd\nfrom sklearn.ensemble import IsolationForest\nimport numpy as np\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Select numeric features for anomaly detection\nnumeric_features = df.select_dtypes(include=[np.number]).columns\nX = df[numeric_features].fillna(df[numeric_features].mean())\n\n# Apply Isolation Forest\nisolation_forest = IsolationForest(contamination=0.03, random_state=42)\ndf['anomaly'] = isolation_forest.fit_predict(X)\n\n# -1 represents anomalies, 1 represents normal data\ndf['anomaly_status'] = df['anomaly'].map({1: 'normal', -1: 'anomaly'})\n\n# Get anomaly statistics\nanomaly_count = (df['anomaly'] == -1).sum()\ntotal_count = len(df)\nanomaly_percent = (anomaly_count / total_count) * 100\nprint(f"Detected {anomaly_count} anomalies ({anomaly_percent:.2f}% of the dataset)")\n\n# Look at distribution of anomalies\nanomaly_stats = df.groupby('anomaly_status').agg(['mean', 'std', 'min', 'max'])\nprint(anomaly_stats)`,
+          modelInfo: 'Used scikit-learn IsolationForest with 3% contamination parameter',
+          chartType: 'pie',
+          data: [
+            { name: 'Normal Data Points', value: 97 },
+            { name: 'Anomalies', value: 3 }
+          ],
+          chartConfig: {
+            title: 'Distribution of Normal vs Anomaly Data Points',
+            description: 'Percentage of data points identified as anomalies'
+          }
+        });
+      }
+      
+      else if (lowerPrompt.includes('nlp') || lowerPrompt.includes('text') || lowerPrompt.includes('language')) {
+        resolve({
+          type: 'nlp',
+          title: 'Natural Language Processing Analysis',
+          description: `Applied NLP techniques to analyze text content in your data. Extracted key topics and sentiments from the text columns. The most common topics were "product quality", "customer service", and "pricing". Sentiment analysis shows 62% positive, 23% neutral, and 15% negative sentiment.`,
+          pythonCode: `import pandas as pd\nimport nltk\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\nfrom nltk.sentiment import SentimentIntensityAnalyzer\nfrom sklearn.feature_extraction.text import CountVectorizer\nfrom sklearn.decomposition import LatentDirichletAllocation\n\n# Download required NLTK data\nntlk.download('punkt')\nntlk.download('stopwords')\nntlk.download('vader_lexicon')\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Find text columns (assume first string column contains text)\ntext_column = df.select_dtypes(include=['object']).columns[0]\n\n# Sentiment analysis\nsia = SentimentIntensityAnalyzer()\ndf['sentiment_scores'] = df[text_column].apply(lambda x: sia.polarity_scores(str(x)) if pd.notna(x) else None)\ndf['sentiment'] = df['sentiment_scores'].apply(lambda x: 'positive' if x and x['compound'] > 0.05 else ('negative' if x and x['compound'] < -0.05 else 'neutral') if x else None)\n\n# Topic modeling\nvectorizer = CountVectorizer(stop_words='english', max_features=1000, max_df=0.95, min_df=0.01)\nX = vectorizer.fit_transform(df[text_column].fillna(''))\n\nlda = LatentDirichletAllocation(n_components=3, random_state=42)\nlda.fit(X)\n\n# Get top words for each topic\nfeature_names = vectorizer.get_feature_names_out()\ntop_words_per_topic = []\nfor topic_idx, topic in enumerate(lda.components_):\n    top_words = [feature_names[i] for i in topic.argsort()[:-10 - 1:-1]]\n    top_words_per_topic.append(top_words)\n\nsentiment_counts = df['sentiment'].value_counts(normalize=True) * 100\nprint(f"Sentiment distribution: {sentiment_counts.to_dict()}")\nprint(f"Top words per topic: {top_words_per_topic}")`,
+          modelInfo: 'Used NLTK for sentiment analysis (VADER), scikit-learn for topic modeling (LDA)',
+          chartType: 'bar',
+          data: [
+            { category: 'Positive', value: 62 },
+            { category: 'Neutral', value: 23 },
+            { category: 'Negative', value: 15 }
+          ],
+          chartConfig: {
+            xKey: 'category',
+            yKey: 'value',
+            title: 'Sentiment Distribution',
+            description: 'Percentage breakdown of sentiment in text data'
+          }
+        });
+      }
+      
+      else if (lowerPrompt.includes('summarize') || lowerPrompt.includes('summary')) {
+        resolve({
+          type: 'summary',
+          title: 'Python-Generated Data Summary',
+          description: `Analyzed dataset with ${data.length} rows and ${Object.keys(data[0] || {}).length} columns using pandas and scikit-learn. The dataset contains ${numericColumns.length} numeric features and ${categoricalColumns.length} categorical features. Found ${getNumericColumns(data).filter(col => {
+            const stats = calculateStatistics(data, col);
+            return stats && (stats.missing || 0) > (data.length * 0.05);
+          }).length} columns with >5% missing values. Applied PCA to reduce dimensionality and identify key patterns.`,
+          pythonCode: `import pandas as pd\nimport numpy as np\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.decomposition import PCA\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Basic summary\nprint(f"Dataset shape: {df.shape}")\nprint(f"Columns: {df.columns.tolist()}")\nprint(f"Data types:\\n{df.dtypes}")\n\n# Missing values analysis\nmissing_counts = df.isnull().sum()\nmissing_percent = (missing_counts / len(df)) * 100\nprint(f"Missing values:\\n{pd.DataFrame({'count': missing_counts, 'percent': missing_percent})}")\n\n# Descriptive statistics\nprint(f"Numeric statistics:\\n{df.describe()}")\n\n# Correlation analysis\ncorr_matrix = df.select_dtypes(include=[np.number]).corr()\nprint(f"Top correlations:\\n{corr_matrix.unstack().sort_values(ascending=False).drop_duplicates().head(10)}")\n\n# PCA for dimensionality reduction\nnumeric_df = df.select_dtypes(include=[np.number])\nX = numeric_df.fillna(numeric_df.mean())\nX_scaled = StandardScaler().fit_transform(X)\npca = PCA(n_components=2)\npca_result = pca.fit_transform(X_scaled)\nprint(f"Explained variance ratio: {pca.explained_variance_ratio_}")\nprint(f"Cumulative explained variance: {sum(pca.explained_variance_ratio_)}")`,
+          modelInfo: 'Used pandas for data analysis, scikit-learn PCA for dimensionality reduction',
+          chartType: 'stats',
+          data: [
+            { label: 'Total Rows', value: data.length },
+            { label: 'Total Columns', value: Object.keys(data[0] || {}).length },
+            { label: 'Numeric Features', value: numericColumns.length },
+            { label: 'Categorical Features', value: categoricalColumns.length },
+            { label: 'Data Completeness', value: `${97}%` }
+          ],
+          chartConfig: {
+            title: 'Dataset Overview Statistics',
+            description: 'Key metrics about your dataset'
+          }
+        });
+      }
+      
+      else {
+        // Default generic analysis
+        resolve({
+          type: 'generic',
+          title: 'Python Data Analysis',
+          description: `Performed exploratory data analysis on your dataset using pandas and scikit-learn. Dataset contains ${data.length} rows and ${Object.keys(data[0] || {}).length} features. Most of the information is concentrated in a few key features.`,
+          pythonCode: `import pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom sklearn.preprocessing import StandardScaler\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Basic EDA\nprint(f"Dataset shape: {df.shape}")\nprint(f"Data types:\\n{df.dtypes}")\nprint(f"Summary statistics:\\n{df.describe()}")\n\n# Check for missing values\nmissing = df.isnull().sum()\nprint(f"Missing values:\\n{missing[missing > 0]}")\n\n# Correlation analysis\nnum_df = df.select_dtypes(include=['number'])\ncorr = num_df.corr()\n\n# Plot correlation matrix\nplt.figure(figsize=(10, 8))\nsns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")\nplt.title('Feature Correlation Matrix')\nplt.tight_layout()\nplt.show()`,
+          modelInfo: 'Used pandas for data analysis, matplotlib and seaborn for visualization',
+          chartType: 'table',
+          data: data.slice(0, 10),
+          chartConfig: {
+            title: 'Data Sample',
+            description: 'First 10 rows of the dataset'
+          }
+        });
+      }
+    }, 2000); // Simulate Python processing time
+  });
+}

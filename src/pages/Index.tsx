@@ -33,7 +33,8 @@ import {
   getNumericColumns,
   getCategoricalColumns,
   detectColumnTypes,
-  getAutomatedInsights
+  getAutomatedInsights,
+  simulatePythonAnalysis
 } from '@/lib/data-analysis';
 
 const mockAIAnalysis = async (prompt: string, data: any[]) => {

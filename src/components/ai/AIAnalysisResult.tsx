@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, CodeSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LineChart from '../visualizations/LineChart';
 import BarChart from '../visualizations/BarChart';
@@ -16,6 +16,8 @@ interface AIAnalysisResultProps {
       type: string;
       title: string;
       description: string;
+      pythonCode?: string;
+      modelInfo?: string;
       data?: any[];
       chartType?: 'bar' | 'line' | 'pie' | 'table' | 'stats';
       chartConfig?: any;
@@ -108,7 +110,7 @@ const AIAnalysisResult: React.FC<AIAnalysisResultProps> = ({ result }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-insight-400" />
-            AI Analysis Results
+            Python AI Analysis Results
           </CardTitle>
           <CardDescription>
             Results for: "{result.query}"
@@ -119,6 +121,25 @@ const AIAnalysisResult: React.FC<AIAnalysisResultProps> = ({ result }) => {
             {response.title}
           </div>
           <p className="text-gray-700 whitespace-pre-line">{response.description}</p>
+          
+          {response.modelInfo && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-md">
+              <p className="text-blue-700 text-sm font-medium">AI Model Information</p>
+              <p className="text-blue-600 text-sm">{response.modelInfo}</p>
+            </div>
+          )}
+          
+          {response.pythonCode && (
+            <div className="mt-4">
+              <div className="flex items-center gap-2 text-gray-700 mb-1">
+                <CodeSquare className="h-4 w-4" />
+                <span className="text-sm font-medium">Python Code Used</span>
+              </div>
+              <pre className="p-3 bg-gray-50 rounded-md overflow-auto text-xs border">
+                <code>{response.pythonCode}</code>
+              </pre>
+            </div>
+          )}
         </CardContent>
       </Card>
 
