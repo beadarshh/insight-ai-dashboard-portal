@@ -49,7 +49,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
   const validateAndSetFile = (file: File) => {
     setError(null);
     
-    // Check if file is an Excel file
+    // Check if file is an Excel file or CSV
     const validExtensions = ['.xlsx', '.xls', '.csv'];
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
     
@@ -86,8 +86,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
         });
       }, 100);
       
-      // Read the Excel file
-      const data = await readExcelFile(selectedFile);
+      // Read the file
+      const data = await readFile(selectedFile);
       
       // Complete the progress bar
       clearInterval(timer);
@@ -105,14 +105,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
       }, 1000);
       
     } catch (error) {
-      console.error("Error processing Excel file:", error);
+      console.error("Error processing file:", error);
       setIsUploading(false);
       setError('Error processing file. Please try again with a different file.');
       toast.error('Failed to process file');
     }
   };
   
-  const readExcelFile = (file: File): Promise<any> => {
+  const readFile = (file: File): Promise<any> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -127,67 +127,91 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
           let data: any[] = [];
           let sheetNames: string[] = [];
           
-          if (file.name.endsWith('.csv')) {
+          if (file.name.toLowerCase().endsWith('.csv')) {
             // Process CSV
             const text = e.target.result as string;
             const rows = text.split('\n');
-            const headers = rows[0].split(',');
             
-            data = rows.slice(1).map(row => {
-              const values = row.split(',');
-              return headers.reduce((obj, header, i) => {
-                obj[header.trim()] = values[i]?.trim() || '';
-                return obj;
-              }, {} as any);
-            }).filter(row => Object.values(row).some(val => val));
+            if (rows.length === 0) {
+              reject(new Error('No data found in CSV file'));
+              return;
+            }
+            
+            const headers = rows[0].split(',').map(header => header.trim());
+            
+            data = rows.slice(1)
+              .filter(row => row.trim().length > 0) // Skip empty rows
+              .map(row => {
+                const values = row.split(',');
+                const rowData: Record<string, any> = {};
+                
+                headers.forEach((header, i) => {
+                  if (header) {
+                    const value = i < values.length ? values[i].trim() : '';
+                    // Try to convert numeric values
+                    rowData[header] = !isNaN(Number(value)) && value !== '' ? Number(value) : value;
+                  }
+                });
+                
+                return rowData;
+              });
             
             sheetNames = ['Sheet1'];
           } else {
             // Process Excel
-            const workbook = XLSX.read(e.target.result, { type: 'binary' });
-            sheetNames = workbook.SheetNames;
-            
-            // Prevent deep nesting that could cause stack overflow by limiting depth
-            const options = { 
-              defval: '', 
-              raw: false,
-              header: 1 
-            };
-            
-            // Get data from the first sheet for now
-            const firstSheet = workbook.Sheets[sheetNames[0]];
-            
-            // Use a simpler approach to parse the sheet to avoid circular references
             try {
-              // First get header row
-              const headerRow = XLSX.utils.sheet_to_json(firstSheet, { header: 1 })[0] as string[];
+              const workbook = XLSX.read(e.target.result, { type: 'binary' });
+              sheetNames = workbook.SheetNames;
               
-              // Then get data rows as array of arrays
-              const dataRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }).slice(1) as any[][];
+              if (sheetNames.length === 0) {
+                reject(new Error('No sheets found in Excel file'));
+                return;
+              }
               
-              // Convert array of arrays to array of objects
-              data = dataRows.map(row => {
+              // Get data from the first sheet
+              const firstSheet = workbook.Sheets[sheetNames[0]];
+              
+              // Convert to JSON with header row
+              const options = { header: 1, defval: '', raw: false };
+              const jsonData = XLSX.utils.sheet_to_json(firstSheet, options);
+              
+              if (jsonData.length < 2) {
+                reject(new Error('No data or headers found in Excel file'));
+                return;
+              }
+              
+              // Extract headers and data rows
+              const headers = jsonData[0] as string[];
+              const rows = jsonData.slice(1) as any[][];
+              
+              // Convert to array of objects
+              data = rows.map(row => {
                 const obj: Record<string, any> = {};
-                headerRow.forEach((header, i) => {
-                  if (header) { // Only process if header exists
-                    obj[header] = i < row.length ? row[i] : '';
+                headers.forEach((header, i) => {
+                  if (header && i < row.length) {
+                    // Try to convert numeric values
+                    const value = row[i];
+                    obj[header] = !isNaN(Number(value)) && value !== '' ? Number(value) : value;
                   }
                 });
                 return obj;
               });
             } catch (err) {
-              console.error("Error parsing Excel sheet:", err);
-              reject(err);
+              console.error("Error parsing Excel:", err);
+              reject(new Error('Failed to parse Excel file. The file might be corrupted.'));
               return;
             }
           }
           
-          // Make sure we don't have empty rows that could cause problems
-          data = data.filter(row => row && Object.keys(row).length > 0);
+          // Make sure we don't have empty rows
+          data = data.filter(row => 
+            row && Object.keys(row).length > 0 && 
+            Object.values(row).some(val => val !== null && val !== undefined && val !== '')
+          );
           
-          // Validate data structure to avoid issues down the line
+          // Validate data structure
           if (data.length === 0) {
-            reject(new Error('No data found in file'));
+            reject(new Error('No valid data found in file'));
             return;
           }
           
@@ -205,8 +229,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
         reject(new Error('Failed to read file'));
       };
       
-      // Read as binary string
-      reader.readAsBinaryString(file);
+      // Read based on file type
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        reader.readAsText(file);
+      } else {
+        reader.readAsBinaryString(file);
+      }
     });
   };
   

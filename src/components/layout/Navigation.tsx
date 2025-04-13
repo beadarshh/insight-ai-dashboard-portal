@@ -79,7 +79,7 @@ const Navigation = () => {
       {/* Profile Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2">
+          <Button variant="ghost" className="flex items-center gap-2 text-insight-600">
             <UserRound className="w-4 h-4" />
             <span>Profile</span>
             <ChevronDown className="w-4 h-4" />

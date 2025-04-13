@@ -1,14 +1,13 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileSpreadsheet, AlertCircle, Clock, BarChart2 } from 'lucide-react';
 import { 
-  File, BarChart3, PieChart, Table2, AlertCircle, 
-  Info, Layers, Battery 
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { detectColumnTypes, analyzeMissingValues, getNumericColumns, getCategoricalColumns } from '@/lib/data-analysis';
-import { cn } from '@/lib/utils';
+  calculateStatistics, 
+  getNumericColumns,
+  getCategoricalColumns,
+  analyzeMissingValues
+} from '@/lib/data-analysis';
 
 interface DashboardOverviewProps {
   data: any[];
@@ -16,205 +15,116 @@ interface DashboardOverviewProps {
 }
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ data, fileName }) => {
-  // Safely handle data analysis
-  let columnTypes = {};
-  let missingValues = {};
-  let numericColumns: string[] = [];
-  let categoricalColumns: string[] = [];
-  let columnTypeCounts = {};
-  let completenessPercentage = 100;
-  let columnsWithHighMissing: [string, { count: number, percentage: number }][] = [];
+  const metrics = useMemo(() => {
+    if (!data || data.length === 0 || !data[0]) {
+      return {
+        rowCount: 0,
+        columnCount: 0,
+        numericColumns: 0,
+        categoricalColumns: 0,
+        missingValues: 0,
+        missingPercent: 0
+      };
+    }
+    
+    const numericCols = getNumericColumns(data);
+    const categoricalCols = getCategoricalColumns(data);
+    const columnCount = Object.keys(data[0]).length;
+    
+    // Calculate missing values
+    const missingValuesAnalysis = analyzeMissingValues(data);
+    let totalMissing = 0;
+    let totalCells = data.length * columnCount;
+    
+    if (missingValuesAnalysis && typeof missingValuesAnalysis === 'object') {
+      Object.values(missingValuesAnalysis).forEach(info => {
+        if (info && typeof info === 'object' && 'count' in info) {
+          totalMissing += info.count as number;
+        }
+      });
+    }
+    
+    const missingPercent = totalCells > 0 ? (totalMissing / totalCells) * 100 : 0;
+    
+    return {
+      rowCount: data.length,
+      columnCount: columnCount,
+      numericColumns: numericCols.length,
+      categoricalColumns: categoricalCols.length,
+      missingValues: totalMissing,
+      missingPercent: missingPercent
+    };
+  }, [data]);
   
-  try {
-    // Data overview analysis
-    columnTypes = detectColumnTypes(data);
-    missingValues = analyzeMissingValues(data);
-    numericColumns = getNumericColumns(data);
-    categoricalColumns = getCategoricalColumns(data);
+  const { fileType, uploadTime } = useMemo(() => {
+    const type = fileName.split('.').pop()?.toLowerCase() || '';
+    const time = new Date().toLocaleTimeString();
     
-    // Calculate column type counts
-    columnTypeCounts = Object.values(columnTypes).reduce((acc: Record<string, number>, type) => {
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {});
-    
-    // Calculate data completeness
-    const totalCells = data.length * Object.keys(data[0] || {}).length;
-    const missingCells = Object.values(missingValues).reduce((sum: number, info: any) => sum + (info?.count || 0), 0);
-    completenessPercentage = totalCells > 0 ? ((totalCells - missingCells) / totalCells) * 100 : 100;
-    
-    // Find columns with high missing values
-    columnsWithHighMissing = Object.entries(missingValues)
-      .filter(([_, info]: [string, any]) => info?.percentage > 20)
-      .sort((a: [string, any], b: [string, any]) => b[1].percentage - a[1].percentage)
-      .slice(0, 5) as [string, { count: number, percentage: number }][];
-  } catch (error) {
-    console.error("Error in DashboardOverview:", error);
-  }
-
+    return {
+      fileType: type === 'csv' ? 'CSV' : type === 'xlsx' || type === 'xls' ? 'Excel' : 'Unknown',
+      uploadTime: time
+    };
+  }, [fileName]);
+  
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* File Information */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Dataset Overview</CardTitle>
-          <File className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">
+            Data Points
+          </CardTitle>
+          <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-xl font-bold">{fileName}</p>
-              <p className="text-xs text-muted-foreground">
-                {new Date().toLocaleDateString()}
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Rows</p>
-                <p className="text-lg font-bold">{data.length.toLocaleString()}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Columns</p>
-                <p className="text-lg font-bold">{Object.keys(data[0] || {}).length}</p>
-              </div>
-            </div>
-            
-            <Separator />
-            
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Data Completeness</span>
-                <span className="font-medium">{completenessPercentage.toFixed(1)}%</span>
-              </div>
-              <Progress value={completenessPercentage} className="h-2" />
-            </div>
-          </div>
+          <div className="text-2xl font-bold">{metrics.rowCount.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {metrics.columnCount} columns • {fileType} file
+          </p>
         </CardContent>
       </Card>
       
-      {/* Column Types */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Column Types</CardTitle>
-          <Layers className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">
+            Column Types
+          </CardTitle>
+          <BarChart2 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-insight-400"></div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Numeric</p>
-                  <p className="text-lg font-bold">{numericColumns.length}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Categorical</p>
-                  <p className="text-lg font-bold">{categoricalColumns.length}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Date/Time</p>
-                  <p className="text-lg font-bold">
-                    {Object.values(columnTypes).filter((type: any) => 
-                      type === 'date' || type === 'datetime'
-                    ).length}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Other</p>
-                  <p className="text-lg font-bold">
-                    {Object.keys(data[0] || {}).length - numericColumns.length - 
-                     categoricalColumns.length - 
-                     Object.values(columnTypes).filter((type: any) => 
-                       type === 'date' || type === 'datetime'
-                     ).length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <Separator />
-            
-            <div className="space-y-2">
-              <p className="text-xs font-medium">Top Numeric Columns</p>
-              <div className="space-y-1">
-                {numericColumns.slice(0, 3).map(column => (
-                  <p key={column} className="text-xs truncate">• {column}</p>
-                ))}
-                {numericColumns.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No numeric columns detected</p>
-                )}
-              </div>
-            </div>
-          </div>
+          <div className="text-2xl font-bold">{metrics.numericColumns} / {metrics.categoricalColumns}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {metrics.numericColumns} numeric • {metrics.categoricalColumns} categorical
+          </p>
         </CardContent>
       </Card>
       
-      {/* Data Quality */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Data Quality Issues</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Missing Values
+          </CardTitle>
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {columnsWithHighMissing.length > 0 ? (
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Columns with missing values</p>
-                  <p className="text-lg font-bold text-amber-500">
-                    {columnsWithHighMissing.length} columns
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  {columnsWithHighMissing.map(([column, info]) => (
-                    <div key={column} className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span 
-                          className="text-muted-foreground truncate max-w-[150px]" 
-                          title={column}
-                        >
-                          {column}
-                        </span>
-                        <span className={cn(
-                          "font-medium",
-                          info.percentage > 50 ? "text-red-500" : "text-amber-500"
-                        )}>
-                          {info.percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                      <Progress 
-                        value={info.percentage} 
-                        className={cn(
-                          "h-1",
-                          info.percentage > 50 ? "bg-red-100" : "bg-amber-100"
-                        )} 
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-32 text-center">
-                <div className="space-y-2">
-                  <div className="mx-auto w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <Battery className="h-5 w-5 text-green-600" />
-                  </div>
-                  <p className="text-sm font-medium text-green-600">No significant data quality issues detected</p>
-                </div>
-              </div>
-            )}
-          </div>
+          <div className="text-2xl font-bold">{metrics.missingValues.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {metrics.missingPercent.toFixed(1)}% of all cells are missing
+          </p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            Upload Time
+          </CardTitle>
+          <Clock className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{uploadTime}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            File processed on {new Date().toLocaleDateString()}
+          </p>
         </CardContent>
       </Card>
     </div>
