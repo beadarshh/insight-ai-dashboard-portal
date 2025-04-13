@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, BarChart3, Upload, Database, Settings, Bell, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Navigation from './Navigation';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -39,30 +40,35 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             label="Dashboard"
             active={true}
             collapsed={collapsed}
+            href="/"
           />
           <NavItem
             icon={<Upload size={20} />}
             label="Data Upload"
             active={false}
             collapsed={collapsed}
+            href="/upload"
           />
           <NavItem
             icon={<BarChart3 size={20} />}
             label="Visualizations"
             active={false}
             collapsed={collapsed}
+            href="/visualizations"
           />
           <NavItem
             icon={<Database size={20} />}
             label="Data Management"
             active={false}
             collapsed={collapsed}
+            href="/data"
           />
           <NavItem
             icon={<Settings size={20} />}
             label="Settings"
             active={false}
             collapsed={collapsed}
+            href="/settings"
           />
         </nav>
       </div>
@@ -73,6 +79,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <header className="bg-white border-b border-gray-200 py-4 px-6 flex justify-between items-center">
           <h2 className="text-lg font-medium">Data Analysis Dashboard</h2>
           <div className="flex items-center gap-4">
+            <Navigation />
             <button className="p-2 rounded-full hover:bg-gray-100 relative">
               <Bell size={20} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -97,12 +104,13 @@ interface NavItemProps {
   label: string;
   active?: boolean;
   collapsed: boolean;
+  href: string;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, active, collapsed }) => {
+const NavItem: React.FC<NavItemProps> = ({ icon, label, active, collapsed, href }) => {
   return (
     <a
-      href="#"
+      href={href}
       className={cn(
         "flex items-center space-x-3 p-3 rounded-lg transition-colors",
         active

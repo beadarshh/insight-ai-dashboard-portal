@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
+import { Lightbulb, BarChart3, LineChartIcon, PieChartIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LineChart from '../visualizations/LineChart';
 import BarChart from '../visualizations/BarChart';
@@ -109,7 +109,9 @@ const AIAnalysisResult: React.FC<AIAnalysisResultProps> = ({ result }) => {
         </CardContent>
       </Card>
 
-      {renderVisualization()}
+      <div className="mt-4 overflow-hidden">
+        {renderVisualization()}
+      </div>
     </div>
   );
 };

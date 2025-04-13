@@ -24,6 +24,8 @@ import PieChart from '@/components/visualizations/PieChart';
 import StatisticsCard from '@/components/visualizations/StatisticsCard';
 import AIAnalysisPrompt from '@/components/ai/AIAnalysisPrompt';
 import AIAnalysisResult from '@/components/ai/AIAnalysisResult';
+import { useAuth } from '@/providers/AuthProvider';
+import { useData } from '@/providers/DataProvider';
 
 import { 
   calculateStatistics, 
@@ -197,6 +199,9 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
 };
 
 const Index = () => {
+  const { user } = useAuth();
+  const { addFile, addAnalysis, setCurrentData } = useData();
+  
   // State for uploaded data
   const [data, setData] = useState<any[]>([]);
   const [fileName, setFileName] = useState<string>('');
@@ -222,6 +227,20 @@ const Index = () => {
     setData(newData);
     setSheetNames(sheets);
     setFileName(name);
+    
+    // Set data in the global state
+    setCurrentData(newData, name);
+    
+    // Save file to history
+    if (user) {
+      addFile({
+        fileName: name,
+        uploadDate: new Date(),
+        rowCount: newData.length,
+        columnCount: Object.keys(newData[0] || {}).length,
+        fileSize: `${Math.round((JSON.stringify(newData).length / 1024) * 10) / 10} KB`
+      });
+    }
     
     // Reset AI analysis
     setAiResult(null);
@@ -420,11 +439,24 @@ const Index = () => {
       // In a real application, this would call an API endpoint
       const result = await mockAIAnalysis(prompt, data);
       
-      setAiResult({
+      const analysisResult = {
         query: prompt,
         response: result,
         timestamp: new Date()
-      });
+      };
+      
+      setAiResult(analysisResult);
+      
+      // Save analysis to history if user is logged in
+      if (user) {
+        addAnalysis({
+          query: prompt,
+          timestamp: new Date(),
+          fileId: 'current',
+          fileName: fileName,
+          resultType: result.type
+        });
+      }
       
       toast.success("AI analysis complete!");
     } catch (error) {
@@ -577,6 +609,7 @@ const Index = () => {
                     setSheetNames([]);
                     setAiResult(null);
                     setAutomaticVisualizations([]);
+                    setCurrentData(null, null);
                   }}
                   className="flex items-center gap-2"
                 >
@@ -598,28 +631,30 @@ const Index = () => {
             
             {/* Dashboard content */}
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid grid-cols-5 md:w-[600px]">
-                <TabsTrigger value="overview" className="flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  <span className="hidden sm:inline">Overview</span>
-                </TabsTrigger>
-                <TabsTrigger value="visualizations" className="flex items-center gap-2">
-                  <BarChart2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Visualizations</span>
-                </TabsTrigger>
-                <TabsTrigger value="data" className="flex items-center gap-2">
-                  <LineChartIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Data</span>
-                </TabsTrigger>
-                <TabsTrigger value="statistics" className="flex items-center gap-2">
-                  <PieChartIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Statistics</span>
-                </TabsTrigger>
-                <TabsTrigger value="ai-insights" className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="hidden sm:inline">AI Insights</span>
-                </TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto">
+                <TabsList className="grid grid-cols-5 md:w-[600px]">
+                  <TabsTrigger value="overview" className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span className="hidden sm:inline">Overview</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="visualizations" className="flex items-center gap-2">
+                    <BarChart2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Visualizations</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="data" className="flex items-center gap-2">
+                    <LineChartIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Data</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="statistics" className="flex items-center gap-2">
+                    <PieChartIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Statistics</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="ai-insights" className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="hidden sm:inline">AI Insights</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
               
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
@@ -627,10 +662,12 @@ const Index = () => {
                 
                 <div className="mt-6">
                   <h2 className="text-xl font-semibold mb-4">Data Preview</h2>
-                  <DataTable 
-                    data={data.slice(0, 10)} 
-                    title="First 10 Rows" 
-                  />
+                  <div className="overflow-hidden rounded-lg border">
+                    <DataTable 
+                      data={data.slice(0, 10)} 
+                      title="First 10 Rows" 
+                    />
+                  </div>
                 </div>
               </TabsContent>
               
@@ -641,11 +678,13 @@ const Index = () => {
               </TabsContent>
               
               {/* Data Tab */}
-              <TabsContent value="data" className="space-y-6">
-                <DataTable 
-                  data={data} 
-                  title="Complete Dataset" 
-                />
+              <TabsContent value="data" className="space-y-6 overflow-hidden">
+                <div className="overflow-hidden rounded-lg border">
+                  <DataTable 
+                    data={data} 
+                    title="Complete Dataset" 
+                  />
+                </div>
               </TabsContent>
               
               {/* Statistics Tab */}
@@ -685,7 +724,9 @@ const Index = () => {
                   
                   <div className="lg:col-span-2">
                     {aiResult ? (
-                      <AIAnalysisResult result={aiResult} />
+                      <div className="overflow-hidden">
+                        <AIAnalysisResult result={aiResult} />
+                      </div>
                     ) : (
                       <Card className="h-full flex items-center justify-center bg-muted/50">
                         <CardContent className="py-12 text-center">
