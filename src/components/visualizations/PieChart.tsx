@@ -38,6 +38,32 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
+// Custom render function for pie chart labels that prevents overlapping
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, value }: any) => {
+  // Position the label outside the pie with enough distance to avoid overlapping
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius * 1.2; // Increase this value to move labels further from the pie
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  
+  // Only show percentage for segments that are large enough to be significant (greater than 3%)
+  if (percent < 0.03) return null;
+  
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill="#333"
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight={500}
+    >
+      {`${name}: ${(percent * 100).toFixed(1)}%`}
+    </text>
+  );
+};
+
 const PieChart: React.FC<PieChartProps> = ({ 
   data, 
   title, 
@@ -58,28 +84,33 @@ const PieChart: React.FC<PieChartProps> = ({
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
-        <div className="h-80 w-full">
+        <div className="h-96 w-full"> {/* Increased height for better spacing */}
           <ResponsiveContainer width="100%" height="100%">
             <RechartPieChart>
               <Pie
                 data={dataWithPercentage}
                 cx="50%"
-                cy="50%"
+                cy="45%" {/* Move the pie chart a bit higher to leave more space for labels */}
                 labelLine={false}
-                outerRadius={130}
-                innerRadius={65}
+                outerRadius={120}
+                innerRadius={60}
                 paddingAngle={1}
                 fill="#8884d8"
                 dataKey="value"
                 nameKey="name"
-                label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+                label={renderCustomizedLabel}
               >
                 {dataWithPercentage.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
-              <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+              <Legend 
+                layout="horizontal" 
+                verticalAlign="bottom" 
+                align="center"
+                wrapperStyle={{ paddingTop: 20 }} // Add padding to move the legend down
+              />
             </RechartPieChart>
           </ResponsiveContainer>
         </div>
