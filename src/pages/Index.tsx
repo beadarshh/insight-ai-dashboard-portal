@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,19 +36,15 @@ import {
 } from '@/lib/data-analysis';
 import { cn } from '@/lib/utils';
 
-// Mock function to simulate AI analysis
 const mockAIAnalysis = async (prompt: string, data: any[]) => {
-  // Simulate processing time
   await new Promise(resolve => setTimeout(resolve, 2000));
   
   const lowerPrompt = prompt.toLowerCase();
   
-  // Detect column types
   const columnTypes = detectColumnTypes(data);
   const numericColumns = getNumericColumns(data);
   const categoricalColumns = getCategoricalColumns(data);
   
-  // Logic for different types of analysis
   if (lowerPrompt.includes('summary') || lowerPrompt.includes('summarize') || lowerPrompt.includes('overview')) {
     return {
       type: 'summary',
@@ -65,7 +60,6 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
   }
   
   if (lowerPrompt.includes('distribution') || lowerPrompt.includes('frequency')) {
-    // Find a categorical column to analyze
     const targetColumn = categoricalColumns[0];
     if (targetColumn) {
       const distribution = getFrequencyDistribution(data, targetColumn, 10);
@@ -87,19 +81,16 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
   
   if (lowerPrompt.includes('trend') || lowerPrompt.includes('over time') || lowerPrompt.includes('monthly') || 
       lowerPrompt.includes('yearly') || lowerPrompt.includes('time series')) {
-    // Look for datetime columns
     const dateColumns = Object.entries(columnTypes)
       .filter(([_, type]) => type === 'date' || type === 'datetime')
       .map(([col, _]) => col);
     
     if (dateColumns.length > 0 && numericColumns.length > 0) {
-      // Create a time series
       const dateColumn = dateColumns[0];
       const valueColumn = numericColumns[0];
       
-      // Prepare data for time series (simplified mock)
       const timeSeriesData = data
-        .slice(0, 20) // Just use a sample for mock data
+        .slice(0, 20)
         .map(row => ({
           date: row[dateColumn],
           value: row[valueColumn]
@@ -128,7 +119,6 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
       const categoryColumn = categoricalColumns[0];
       const valueColumn = numericColumns[0];
       
-      // Create aggregated data for comparison
       const categories = [...new Set(data.map(row => row[categoryColumn]))].slice(0, 10);
       const comparisonData = categories.map(category => {
         const filteredRows = data.filter(row => row[categoryColumn] === category);
@@ -157,7 +147,6 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
     }
   }
   
-  // Default response if no specific analysis is matched
   if (numericColumns.length > 0) {
     const column = numericColumns[0];
     const stats = calculateStatistics(data, column);
@@ -184,7 +173,6 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
     }
   }
   
-  // Generic fallback
   return {
     type: 'generic',
     title: 'Data Analysis',
@@ -202,231 +190,230 @@ const Index = () => {
   const { user } = useAuth();
   const { addFile, addAnalysis, setCurrentData } = useData();
   
-  // State for uploaded data
   const [data, setData] = useState<any[]>([]);
   const [fileName, setFileName] = useState<string>('');
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   
-  // State for AI analysis
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [aiResult, setAiResult] = useState<any>(null);
   
-  // Auto-generate visualizations when data is loaded
   const [automaticVisualizations, setAutomaticVisualizations] = useState<any[]>([]);
   
-  // Ref to hold data for downloads
   const dataRef = useRef<any[]>([]);
   
-  // Update ref when data changes
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
   
-  // Handle file upload
   const handleDataLoaded = (newData: any[], sheets: string[], name: string) => {
-    setData(newData);
-    setSheetNames(sheets);
-    setFileName(name);
-    
-    // Set data in the global state
-    setCurrentData(newData, name);
-    
-    // Save file to history
-    if (user) {
-      addFile({
-        fileName: name,
-        uploadDate: new Date(),
-        rowCount: newData.length,
-        columnCount: Object.keys(newData[0] || {}).length,
-        fileSize: `${Math.round((JSON.stringify(newData).length / 1024) * 10) / 10} KB`
-      });
+    if (!newData || newData.length === 0 || !newData[0]) {
+      toast.error("No valid data found in the file");
+      return;
     }
     
-    // Reset AI analysis
-    setAiResult(null);
-    
-    // Generate automatic visualizations
-    generateAutomaticVisualizations(newData);
+    try {
+      setData(newData);
+      setSheetNames(sheets);
+      setFileName(name);
+      
+      setCurrentData(newData, name);
+      
+      if (user) {
+        addFile({
+          fileName: name,
+          uploadDate: new Date(),
+          rowCount: newData.length,
+          columnCount: Object.keys(newData[0] || {}).length,
+          fileSize: `${Math.round((JSON.stringify(newData).length / 1024) * 10) / 10} KB`
+        });
+      }
+      
+      setAiResult(null);
+      
+      generateAutomaticVisualizations(newData);
+      
+      toast.success("File processed successfully!");
+    } catch (error) {
+      console.error("Error handling data:", error);
+      toast.error("Error processing file data");
+    }
   };
   
-  // Generate automatic visualizations based on data
   const generateAutomaticVisualizations = (data: any[]) => {
-    if (data.length === 0) return;
+    if (!data || data.length === 0 || !data[0]) return;
     
-    const visualizations = [];
-    const numericColumns = getNumericColumns(data);
-    const categoricalColumns = getCategoricalColumns(data);
-    
-    // 1. If we have categorical columns, create a frequency distribution
-    if (categoricalColumns.length > 0) {
-      const catColumn = categoricalColumns[0];
-      const distribution = getFrequencyDistribution(data, catColumn, 10);
+    try {
+      const visualizations = [];
+      const numericColumns = getNumericColumns(data);
+      const categoricalColumns = getCategoricalColumns(data);
       
-      visualizations.push({
-        type: 'bar',
-        title: `Distribution of ${catColumn}`,
-        data: distribution,
-        config: {
-          xKey: 'value',
-          yKey: 'count'
+      if (categoricalColumns.length > 0) {
+        const catColumn = categoricalColumns[0];
+        const distribution = getFrequencyDistribution(data, catColumn, 10);
+        
+        if (distribution && distribution.length > 0) {
+          visualizations.push({
+            type: 'bar',
+            title: `Distribution of ${catColumn}`,
+            data: distribution,
+            config: {
+              xKey: 'value',
+              yKey: 'count'
+            }
+          });
         }
-      });
+        
+        if (categoricalColumns.length > 1 && numericColumns.length > 0) {
+          const catColumn2 = categoricalColumns[1];
+          const numColumn = numericColumns[0];
+          
+          const topCats1 = getFrequencyDistribution(data, catColumn, 5).map(d => d.value);
+          const topCats2 = getFrequencyDistribution(data, catColumn2, 5).map(d => d.value);
+          
+          const filteredData = data.filter(row => 
+            topCats1.includes(row[catColumn]) && topCats2.includes(row[catColumn2])
+          );
+          
+          const groupedData: Record<string, any> = {};
+          
+          filteredData.forEach(row => {
+            const cat1 = String(row[catColumn]);
+            const cat2 = String(row[catColumn2]);
+            const num = Number(row[numColumn]) || 0;
+            
+            if (!groupedData[cat1]) {
+              groupedData[cat1] = { [catColumn]: cat1 };
+            }
+            
+            if (!groupedData[cat1][cat2]) {
+              groupedData[cat1][cat2] = num;
+            } else {
+              groupedData[cat1][cat2] += num;
+            }
+          });
+          
+          const multiSeriesData = Object.values(groupedData);
+          
+          if (multiSeriesData.length > 0) {
+            visualizations.push({
+              type: 'bar_multi',
+              title: `${numColumn} by ${catColumn} and ${catColumn2}`,
+              data: multiSeriesData,
+              config: {
+                xKey: catColumn,
+                yKeys: topCats2
+              }
+            });
+          }
+        }
+      }
       
-      // If we have a second categorical column and at least one numeric column,
-      // create a grouped visualization
-      if (categoricalColumns.length > 1 && numericColumns.length > 0) {
-        const catColumn2 = categoricalColumns[1];
+      if (numericColumns.length > 0) {
+        const numColumn = numericColumns[0];
+        const stats = calculateStatistics(data, numColumn);
+        
+        if (stats) {
+          visualizations.push({
+            type: 'stats',
+            title: `Statistics for ${numColumn}`,
+            data: [
+              { label: 'Mean', value: stats.mean },
+              { label: 'Median', value: stats.median },
+              { label: 'Min', value: stats.min },
+              { label: 'Max', value: stats.max },
+              { label: 'Standard Deviation', value: stats.stdDev }
+            ]
+          });
+        }
+        
+        if (numericColumns.length > 1) {
+          const numColumn2 = numericColumns[1];
+          
+          const scatterData = data
+            .filter(row => 
+              row[numColumn] !== null && row[numColumn] !== undefined && 
+              row[numColumn2] !== null && row[numColumn2] !== undefined
+            )
+            .slice(0, 100)
+            .map(row => ({
+              x: Number(row[numColumn]),
+              y: Number(row[numColumn2])
+            }));
+          
+          if (scatterData.length > 10) {
+            visualizations.push({
+              type: 'scatter',
+              title: `${numColumn} vs ${numColumn2}`,
+              data: scatterData,
+              config: {
+                xKey: 'x',
+                yKey: 'y',
+                xLabel: numColumn,
+                yLabel: numColumn2
+              }
+            });
+          }
+        }
+      }
+      
+      const columnTypes = detectColumnTypes(data);
+      const dateColumns = Object.entries(columnTypes)
+        .filter(([_, type]) => type === 'date' || type === 'datetime')
+        .map(([col, _]) => col);
+      
+      if (dateColumns.length > 0 && numericColumns.length > 0) {
+        const dateColumn = dateColumns[0];
         const numColumn = numericColumns[0];
         
-        // Get top 5 categories from each categorical column
-        const topCats1 = getFrequencyDistribution(data, catColumn, 5).map(d => d.value);
-        const topCats2 = getFrequencyDistribution(data, catColumn2, 5).map(d => d.value);
-        
-        // Filter data to only include top categories
-        const filteredData = data.filter(row => 
-          topCats1.includes(row[catColumn]) && topCats2.includes(row[catColumn2])
-        );
-        
-        // Group by first category and calculate average of numeric column for each group
-        const groupedData: Record<string, any> = {};
-        
-        filteredData.forEach(row => {
-          const cat1 = String(row[catColumn]);
-          const cat2 = String(row[catColumn2]);
-          const num = Number(row[numColumn]) || 0;
-          
-          if (!groupedData[cat1]) {
-            groupedData[cat1] = { [catColumn]: cat1 };
-          }
-          
-          if (!groupedData[cat1][cat2]) {
-            groupedData[cat1][cat2] = num;
-          } else {
-            groupedData[cat1][cat2] += num;
-          }
-        });
-        
-        const multiSeriesData = Object.values(groupedData);
-        
-        if (multiSeriesData.length > 0) {
-          visualizations.push({
-            type: 'bar_multi',
-            title: `${numColumn} by ${catColumn} and ${catColumn2}`,
-            data: multiSeriesData,
-            config: {
-              xKey: catColumn,
-              yKeys: topCats2
-            }
-          });
-        }
-      }
-    }
-    
-    // 2. If we have numeric columns, create a histogram-like visualization for the first one
-    if (numericColumns.length > 0) {
-      const numColumn = numericColumns[0];
-      const stats = calculateStatistics(data, numColumn);
-      
-      if (stats) {
-        visualizations.push({
-          type: 'stats',
-          title: `Statistics for ${numColumn}`,
-          data: [
-            { label: 'Mean', value: stats.mean },
-            { label: 'Median', value: stats.median },
-            { label: 'Min', value: stats.min },
-            { label: 'Max', value: stats.max },
-            { label: 'Standard Deviation', value: stats.stdDev }
-          ]
-        });
-      }
-      
-      // If we have more than one numeric column, create a scatter plot
-      if (numericColumns.length > 1) {
-        const numColumn2 = numericColumns[1];
-        
-        const scatterData = data
-          .filter(row => 
-            row[numColumn] !== null && row[numColumn] !== undefined && 
-            row[numColumn2] !== null && row[numColumn2] !== undefined
-          )
-          .slice(0, 100) // Limit to 100 points for performance
+        const timeSeriesData = data
+          .filter(row => row[dateColumn] && row[numColumn] !== null && row[numColumn] !== undefined)
+          .slice(0, 100)
           .map(row => ({
-            x: Number(row[numColumn]),
-            y: Number(row[numColumn2])
-          }));
+            date: row[dateColumn],
+            value: Number(row[numColumn])
+          }))
+          .sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateA.getTime() - dateB.getTime();
+          });
         
-        if (scatterData.length > 10) {
+        if (timeSeriesData.length > 5) {
           visualizations.push({
-            type: 'scatter',
-            title: `${numColumn} vs ${numColumn2}`,
-            data: scatterData,
+            type: 'line',
+            title: `${numColumn} Over Time`,
+            data: timeSeriesData,
             config: {
-              xKey: 'x',
-              yKey: 'y',
-              xLabel: numColumn,
-              yLabel: numColumn2
+              xKey: 'date',
+              yKey: 'value'
             }
           });
         }
       }
-    }
-    
-    // 3. If we have date columns and numeric columns, create a time series
-    const columnTypes = detectColumnTypes(data);
-    const dateColumns = Object.entries(columnTypes)
-      .filter(([_, type]) => type === 'date' || type === 'datetime')
-      .map(([col, _]) => col);
-    
-    if (dateColumns.length > 0 && numericColumns.length > 0) {
-      const dateColumn = dateColumns[0];
-      const numColumn = numericColumns[0];
       
-      const timeSeriesData = data
-        .filter(row => row[dateColumn] && row[numColumn] !== null && row[numColumn] !== undefined)
-        .slice(0, 100)
-        .map(row => ({
-          date: row[dateColumn],
-          value: Number(row[numColumn])
-        }))
-        .sort((a, b) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateA.getTime() - dateB.getTime();
-        });
-      
-      if (timeSeriesData.length > 5) {
-        visualizations.push({
-          type: 'line',
-          title: `${numColumn} Over Time`,
-          data: timeSeriesData,
-          config: {
-            xKey: 'date',
-            yKey: 'value'
-          }
-        });
+      if (categoricalColumns.length > 0) {
+        const catColumn = categoricalColumns[0];
+        const distribution = getFrequencyDistribution(data, catColumn, 8);
+        
+        if (distribution && distribution.length > 0) {
+          visualizations.push({
+            type: 'pie',
+            title: `Distribution of ${catColumn}`,
+            data: distribution.map(item => ({
+              name: item.value,
+              value: item.count
+            }))
+          });
+        }
       }
-    }
-    
-    // 4. Create a pie chart for a categorical column if available
-    if (categoricalColumns.length > 0) {
-      const catColumn = categoricalColumns[0];
-      const distribution = getFrequencyDistribution(data, catColumn, 8);
       
-      visualizations.push({
-        type: 'pie',
-        title: `Distribution of ${catColumn}`,
-        data: distribution.map(item => ({
-          name: item.value,
-          value: item.count
-        }))
-      });
+      setAutomaticVisualizations(visualizations);
+    } catch (error) {
+      console.error("Error generating visualizations:", error);
+      toast.error("Failed to generate visualizations");
     }
-    
-    setAutomaticVisualizations(visualizations);
   };
   
-  // Handle AI analysis request
   const handleAIAnalysis = async (prompt: string) => {
     if (data.length === 0) {
       toast.error("Please upload data before requesting AI analysis");
@@ -436,7 +423,6 @@ const Index = () => {
     setIsAnalyzing(true);
     
     try {
-      // In a real application, this would call an API endpoint
       const result = await mockAIAnalysis(prompt, data);
       
       const analysisResult = {
@@ -447,7 +433,6 @@ const Index = () => {
       
       setAiResult(analysisResult);
       
-      // Save analysis to history if user is logged in
       if (user) {
         addAnalysis({
           query: prompt,
@@ -467,7 +452,6 @@ const Index = () => {
     }
   };
   
-  // Handle export to CSV
   const handleExportCSV = () => {
     if (dataRef.current.length === 0) {
       toast.error("No data available to export");
@@ -481,7 +465,6 @@ const Index = () => {
         ...dataRef.current.map(row => 
           columns.map(col => {
             const value = row[col];
-            // Handle strings with commas, quotes, etc.
             if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
               return `"${value.replace(/"/g, '""')}"`;
             }
@@ -506,7 +489,6 @@ const Index = () => {
     }
   };
   
-  // Render automatic visualizations
   const renderAutomaticVisualizations = () => {
     if (automaticVisualizations.length === 0) return null;
     
@@ -590,12 +572,11 @@ const Index = () => {
           </Card>
         ) : (
           <>
-            {/* Dashboard Header with actions */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">{fileName}</h1>
                 <p className="text-muted-foreground">
-                  {data.length.toLocaleString()} rows • {Object.keys(data[0]).length} columns • {sheetNames.length} sheets
+                  {data.length.toLocaleString()} rows • {Object.keys(data[0] || {}).length} columns • {sheetNames.length} sheets
                 </p>
               </div>
               
@@ -629,7 +610,6 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Dashboard content */}
             <Tabs defaultValue="overview" className="space-y-6">
               <div className="overflow-x-auto">
                 <TabsList className="grid grid-cols-5 md:w-[600px]">
@@ -656,7 +636,6 @@ const Index = () => {
                 </TabsList>
               </div>
               
-              {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
                 <DashboardOverview data={data} fileName={fileName} />
                 
@@ -671,13 +650,17 @@ const Index = () => {
                 </div>
               </TabsContent>
               
-              {/* Visualizations Tab */}
               <TabsContent value="visualizations" className="space-y-6">
                 <h2 className="text-xl font-semibold mb-4">Automated Visualizations</h2>
-                {renderAutomaticVisualizations()}
+                {automaticVisualizations.length > 0 ? (
+                  renderAutomaticVisualizations()
+                ) : (
+                  <Card className="p-6 text-center">
+                    <p>No visualizations could be generated for this dataset.</p>
+                  </Card>
+                )}
               </TabsContent>
               
-              {/* Data Tab */}
               <TabsContent value="data" className="space-y-6 overflow-hidden">
                 <div className="overflow-hidden rounded-lg border">
                   <DataTable 
@@ -687,7 +670,6 @@ const Index = () => {
                 </div>
               </TabsContent>
               
-              {/* Statistics Tab */}
               <TabsContent value="statistics" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {getNumericColumns(data).slice(0, 4).map(column => {
@@ -712,7 +694,6 @@ const Index = () => {
                 </div>
               </TabsContent>
               
-              {/* AI Insights Tab */}
               <TabsContent value="ai-insights" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1">

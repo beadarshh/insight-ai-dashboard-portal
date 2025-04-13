@@ -1,90 +1,128 @@
 
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+  BarChart3, 
+  FileText, 
+  Upload, 
+  UserRound, 
+  LogOut, 
+  Settings,
+  ChevronDown
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/providers/AuthProvider';
 import { cn } from '@/lib/utils';
-import { BarChart3, FileText, Upload, UserRound } from 'lucide-react';
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>Dashboard</NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <div className="grid gap-3 p-4 w-[400px] md:w-[500px]">
-              <Link to="/" className={cn(
-                "flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors",
-                location.pathname === "/" && "bg-accent"
-              )}>
-                <BarChart3 className="w-5 h-5" />
-                <div className="flex flex-col">
-                  <span className="font-medium">Analytics Dashboard</span>
-                  <span className="text-sm text-muted-foreground">Visualize and explore your data</span>
-                </div>
-              </Link>
-              <Link to="/upload" className={cn(
-                "flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors",
-                location.pathname === "/upload" && "bg-accent"
-              )}>
-                <Upload className="w-5 h-5" />
-                <div className="flex flex-col">
-                  <span className="font-medium">Data Upload</span>
-                  <span className="text-sm text-muted-foreground">Upload and manage your datasets</span>
-                </div>
-              </Link>
-              <Link to="/reports" className={cn(
-                "flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors",
-                location.pathname === "/reports" && "bg-accent"
-              )}>
-                <FileText className="w-5 h-5" />
-                <div className="flex flex-col">
-                  <span className="font-medium">Reports</span>
-                  <span className="text-sm text-muted-foreground">View saved analysis reports</span>
-                </div>
-              </Link>
-            </div>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>Profile</NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <div className="grid gap-3 p-4 w-[300px]">
-              <Link to="/profile" className={cn(
-                "flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors",
-                location.pathname === "/profile" && "bg-accent"
-              )}>
-                <UserRound className="w-5 h-5" />
-                <div className="flex flex-col">
-                  <span className="font-medium">My Profile</span>
-                  <span className="text-sm text-muted-foreground">View and edit your profile</span>
-                </div>
-              </Link>
-              <Link to="/history" className={cn(
-                "flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors",
-                location.pathname === "/history" && "bg-accent"
-              )}>
-                <BarChart3 className="w-5 h-5" />
-                <div className="flex flex-col">
-                  <span className="font-medium">Analysis History</span>
-                  <span className="text-sm text-muted-foreground">View your previous analyses</span>
-                </div>
-              </Link>
-            </div>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+    <div className="flex items-center gap-4">
+      {/* Dashboard Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            <span>Dashboard</span>
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[220px] p-2">
+          <Link to="/">
+            <DropdownMenuItem className={cn(
+              "flex items-center gap-3 p-2 cursor-pointer",
+              location.pathname === "/" && "bg-accent"
+            )}>
+              <BarChart3 className="w-4 h-4" />
+              <span>Analytics Dashboard</span>
+            </DropdownMenuItem>
+          </Link>
+          
+          <Link to="/upload">
+            <DropdownMenuItem className={cn(
+              "flex items-center gap-3 p-2 cursor-pointer",
+              location.pathname === "/upload" && "bg-accent"
+            )}>
+              <Upload className="w-4 h-4" />
+              <span>Data Upload</span>
+            </DropdownMenuItem>
+          </Link>
+          
+          <Link to="/reports">
+            <DropdownMenuItem className={cn(
+              "flex items-center gap-3 p-2 cursor-pointer",
+              location.pathname === "/reports" && "bg-accent"
+            )}>
+              <FileText className="w-4 h-4" />
+              <span>Reports</span>
+            </DropdownMenuItem>
+          </Link>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      
+      {/* Profile Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="flex items-center gap-2">
+            <UserRound className="w-4 h-4" />
+            <span>Profile</span>
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[220px] p-2">
+          <DropdownMenuLabel>
+            {user ? user.name : 'Account'}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          <Link to="/profile">
+            <DropdownMenuItem className={cn(
+              "flex items-center gap-3 p-2 cursor-pointer",
+              location.pathname === "/profile" && "bg-accent"
+            )}>
+              <UserRound className="w-4 h-4" />
+              <span>My Profile</span>
+            </DropdownMenuItem>
+          </Link>
+          
+          <Link to="/settings">
+            <DropdownMenuItem className={cn(
+              "flex items-center gap-3 p-2 cursor-pointer",
+              location.pathname === "/settings" && "bg-accent"
+            )}>
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+          </Link>
+          
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem 
+            className="flex items-center gap-3 p-2 cursor-pointer text-red-500 hover:text-red-600 focus:text-red-600"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
 

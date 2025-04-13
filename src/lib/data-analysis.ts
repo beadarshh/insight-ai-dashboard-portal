@@ -1,4 +1,3 @@
-
 /**
  * Data analysis utility functions
  */
@@ -7,39 +6,52 @@
 export function calculateStatistics(data: any[], columnName: string) {
   if (!data || data.length === 0) return null;
   
-  // Extract numeric values from the column, ensuring they're actually numbers
-  const values = data
-    .map(row => {
-      const val = row[columnName];
-      // Make sure we don't return NaN values which could cause problems later
-      return val !== null && val !== undefined && !isNaN(Number(val)) ? Number(val) : null;
-    })
-    .filter(val => val !== null) as number[];
-  
-  if (values.length === 0) return null;
-  
-  // Sort values for percentile calculations
-  const sortedValues = [...values].sort((a, b) => a - b);
-  
-  const sum = values.reduce((acc, val) => acc + val, 0);
-  const mean = sum / values.length;
-  
-  const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
-  const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / values.length;
-  const stdDev = Math.sqrt(variance);
-  
-  return {
-    count: values.length,
-    min: Math.min(...values),
-    max: Math.max(...values),
-    sum: sum,
-    mean: mean,
-    median: sortedValues[Math.floor(sortedValues.length / 2)],
-    stdDev: stdDev,
-    variance: variance,
-    q1: sortedValues[Math.floor(sortedValues.length * 0.25)],
-    q3: sortedValues[Math.floor(sortedValues.length * 0.75)]
-  };
+  try {
+    // Extract numeric values from the column, ensuring they're actually numbers
+    const values = data
+      .map(row => {
+        if (!row) return null;
+        
+        const val = row[columnName];
+        // Make sure we don't return NaN values which could cause problems later
+        return val !== null && val !== undefined && !isNaN(Number(val)) ? Number(val) : null;
+      })
+      .filter(val => val !== null) as number[];
+    
+    if (values.length === 0) return null;
+    
+    // Sort values for percentile calculations
+    const sortedValues = [...values].sort((a, b) => a - b);
+    
+    const sum = values.reduce((acc, val) => acc + val, 0);
+    const mean = sum / values.length;
+    
+    const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+    const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Safe array access for percentiles
+    const getPercentileValue = (arr: number[], percentile: number) => {
+      const index = Math.floor(arr.length * percentile);
+      return arr[Math.min(index, arr.length - 1)];
+    };
+    
+    return {
+      count: values.length,
+      min: Math.min(...values),
+      max: Math.max(...values),
+      sum: sum,
+      mean: mean,
+      median: getPercentileValue(sortedValues, 0.5),
+      stdDev: stdDev,
+      variance: variance,
+      q1: getPercentileValue(sortedValues, 0.25),
+      q3: getPercentileValue(sortedValues, 0.75)
+    };
+  } catch (error) {
+    console.error(`Error calculating statistics for ${columnName}:`, error);
+    return null;
+  }
 }
 
 // Detect column data types
@@ -49,45 +61,49 @@ export function detectColumnTypes(data: any[]) {
   const sampleRow = data[0];
   const columnTypes: Record<string, string> = {};
   
-  Object.keys(sampleRow).forEach(column => {
-    // Get a sample of values (up to 100)
-    const sampleValues = data
-      .slice(0, Math.min(100, data.length))
-      .map(row => row[column]);
-    
-    // Count non-null values
-    const nonNullValues = sampleValues.filter(val => val !== null && val !== undefined);
-    
-    if (nonNullValues.length === 0) {
-      columnTypes[column] = 'unknown';
-      return;
-    }
-    
-    // Check if all values are numeric
-    const numericValues = nonNullValues.filter(val => !isNaN(Number(val)));
-    if (numericValues.length === nonNullValues.length) {
-      // Further distinguish between integers and floats
-      const integerValues = numericValues.filter(val => Number.isInteger(Number(val)));
-      columnTypes[column] = integerValues.length === numericValues.length ? 'integer' : 'float';
-      return;
-    }
-    
-    // Check for date patterns
-    const datePattern = /^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}$/;
-    const dateTimePattern = /^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}\s\d{1,2}:\d{1,2}/;
-    
-    const potentialDates = nonNullValues.filter(val => 
-      typeof val === 'string' && (datePattern.test(val) || dateTimePattern.test(val))
-    );
-    
-    if (potentialDates.length > nonNullValues.length * 0.7) {
-      columnTypes[column] = dateTimePattern.test(potentialDates[0]) ? 'datetime' : 'date';
-      return;
-    }
-    
-    // Default to string/categorical
-    columnTypes[column] = 'string';
-  });
+  try {
+    Object.keys(sampleRow).forEach(column => {
+      // Get a sample of values (up to 100)
+      const sampleValues = data
+        .slice(0, Math.min(100, data.length))
+        .map(row => row?.[column]);
+      
+      // Count non-null values
+      const nonNullValues = sampleValues.filter(val => val !== null && val !== undefined);
+      
+      if (nonNullValues.length === 0) {
+        columnTypes[column] = 'unknown';
+        return;
+      }
+      
+      // Check if all values are numeric
+      const numericValues = nonNullValues.filter(val => !isNaN(Number(val)));
+      if (numericValues.length === nonNullValues.length) {
+        // Further distinguish between integers and floats
+        const integerValues = numericValues.filter(val => Number.isInteger(Number(val)));
+        columnTypes[column] = integerValues.length === numericValues.length ? 'integer' : 'float';
+        return;
+      }
+      
+      // Check for date patterns
+      const datePattern = /^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}$/;
+      const dateTimePattern = /^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}\s\d{1,2}:\d{1,2}/;
+      
+      const potentialDates = nonNullValues.filter(val => 
+        typeof val === 'string' && (datePattern.test(val) || dateTimePattern.test(val))
+      );
+      
+      if (potentialDates.length > nonNullValues.length * 0.7) {
+        columnTypes[column] = dateTimePattern.test(potentialDates[0]) ? 'datetime' : 'date';
+        return;
+      }
+      
+      // Default to string/categorical
+      columnTypes[column] = 'string';
+    });
+  } catch (error) {
+    console.error("Error detecting column types:", error);
+  }
   
   return columnTypes;
 }
@@ -182,31 +198,46 @@ export function getFrequencyDistribution(data: any[], columnName: string, limit 
 export function getNumericColumns(data: any[]) {
   if (!data || data.length === 0) return [];
   
-  const columns = Object.keys(data[0]);
-  return columns.filter(column => {
-    const values = data
-      .map(row => row[column])
-      .filter(val => val !== null && val !== undefined);
+  try {
+    const columns = Object.keys(data[0] || {});
+    return columns.filter(column => {
+      const values = data
+        .map(row => row?.[column])
+        .filter(val => val !== null && val !== undefined);
+        
+      if (values.length === 0) return false;
       
-    if (values.length === 0) return false;
-    
-    const numericValues = values.filter(val => !isNaN(Number(val)));
-    return numericValues.length > values.length * 0.7;
-  });
+      const numericValues = values.filter(val => !isNaN(Number(val)));
+      return numericValues.length > values.length * 0.7;
+    });
+  } catch (error) {
+    console.error("Error getting numeric columns:", error);
+    return [];
+  }
 }
 
 // Get all categorical columns
 export function getCategoricalColumns(data: any[]) {
   if (!data || data.length === 0) return [];
   
-  const columns = Object.keys(data[0]);
-  const numericColumns = getNumericColumns(data);
-  
-  return columns.filter(column => 
-    !numericColumns.includes(column) && 
-    // Count unique values to ensure it's not just a unique identifier
-    new Set(data.map(row => row[column])).size < data.length * 0.5
-  );
+  try {
+    const columns = Object.keys(data[0] || {});
+    const numericColumns = getNumericColumns(data);
+    
+    return columns.filter(column => {
+      try {
+        return !numericColumns.includes(column) && 
+          // Count unique values to ensure it's not just a unique identifier
+          new Set(data.map(row => row?.[column]).filter(val => val !== undefined)).size < data.length * 0.5;
+      } catch (e) {
+        console.error(`Error processing column ${column}:`, e);
+        return false;
+      }
+    });
+  } catch (error) {
+    console.error("Error getting categorical columns:", error);
+    return [];
+  }
 }
 
 // Get data sample

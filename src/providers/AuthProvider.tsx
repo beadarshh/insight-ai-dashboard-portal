@@ -94,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
       createdAt: new Date(),
+      profileImage: undefined
     };
     
     mockUsers.push(newUser);

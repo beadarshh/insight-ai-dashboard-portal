@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, BarChart3, LineChartIcon, PieChartIcon } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LineChart from '../visualizations/LineChart';
 import BarChart from '../visualizations/BarChart';
-import PieChartComponent from '../visualizations/PieChart';
+import PieChart from '../visualizations/PieChart';
 import StatisticsCard from '../visualizations/StatisticsCard';
 import DataTable from '../visualizations/DataTable';
 
@@ -16,7 +16,7 @@ interface AIAnalysisResultProps {
       type: string;
       title: string;
       description: string;
-      data?: any;
+      data?: any[];
       chartType?: 'bar' | 'line' | 'pie' | 'table' | 'stats';
       chartConfig?: any;
     };
@@ -31,61 +31,74 @@ const AIAnalysisResult: React.FC<AIAnalysisResultProps> = ({ result }) => {
   
   // Render the appropriate chart based on type
   const renderVisualization = () => {
-    if (!response.chartType || !response.data) return null;
+    if (!response?.chartType || !response?.data) return null;
 
-    switch (response.chartType) {
-      case 'bar':
-        return (
-          <BarChart
-            data={response.data}
-            xKey={response.chartConfig?.xKey || 'name'}
-            yKey={response.chartConfig?.yKey || 'value'}
-            title={response.chartConfig?.title || 'Bar Chart'}
-            description={response.chartConfig?.description}
-            color={response.chartConfig?.color || '#8B5CF6'}
-          />
-        );
-      case 'line':
-        return (
-          <LineChart
-            data={response.data}
-            xKey={response.chartConfig?.xKey || 'name'}
-            yKey={response.chartConfig?.yKeys || 'value'}
-            title={response.chartConfig?.title || 'Line Chart'}
-            description={response.chartConfig?.description}
-            colors={response.chartConfig?.colors}
-          />
-        );
-      case 'pie':
-        return (
-          <PieChartComponent
-            data={response.data.map((item: any) => ({
-              name: item[response.chartConfig?.nameKey || 'name'],
-              value: item[response.chartConfig?.valueKey || 'value'],
-            }))}
-            title={response.chartConfig?.title || 'Pie Chart'}
-            description={response.chartConfig?.description}
-            colors={response.chartConfig?.colors}
-          />
-        );
-      case 'stats':
-        return (
-          <StatisticsCard
-            title={response.chartConfig?.title || 'Statistics'}
-            description={response.chartConfig?.description}
-            statistics={response.data}
-          />
-        );
-      case 'table':
-        return (
-          <DataTable
-            data={response.data}
-            title={response.chartConfig?.title || 'Data Table'}
-            description={response.chartConfig?.description}
-          />
-        );
-      default:
-        return null;
+    try {
+      switch (response.chartType) {
+        case 'bar':
+          return (
+            <BarChart
+              data={response.data}
+              xKey={response.chartConfig?.xKey || 'name'}
+              yKey={response.chartConfig?.yKey || 'value'}
+              title={response.chartConfig?.title || 'Bar Chart'}
+              description={response.chartConfig?.description}
+              color={response.chartConfig?.color || '#8B5CF6'}
+            />
+          );
+        case 'line':
+          return (
+            <LineChart
+              data={response.data}
+              xKey={response.chartConfig?.xKey || 'name'}
+              yKey={response.chartConfig?.yKey || 'value'}
+              title={response.chartConfig?.title || 'Line Chart'}
+              description={response.chartConfig?.description}
+              colors={response.chartConfig?.colors}
+            />
+          );
+        case 'pie':
+          return (
+            <PieChart
+              data={response.data.map((item: any) => ({
+                name: item[response.chartConfig?.nameKey || 'name'] || item.name,
+                value: item[response.chartConfig?.valueKey || 'value'] || item.value,
+              }))}
+              title={response.chartConfig?.title || 'Pie Chart'}
+              description={response.chartConfig?.description}
+              colors={response.chartConfig?.colors}
+            />
+          );
+        case 'stats':
+          return (
+            <StatisticsCard
+              title={response.chartConfig?.title || 'Statistics'}
+              description={response.chartConfig?.description}
+              statistics={response.data}
+            />
+          );
+        case 'table':
+          return (
+            <DataTable
+              data={response.data}
+              title={response.chartConfig?.title || 'Data Table'}
+              description={response.chartConfig?.description}
+            />
+          );
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error("Error rendering visualization:", error);
+      return (
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-4">
+            <p className="text-red-600">
+              Error rendering visualization. The data format might not be compatible with the selected chart type.
+            </p>
+          </CardContent>
+        </Card>
+      );
     }
   };
 
@@ -109,9 +122,7 @@ const AIAnalysisResult: React.FC<AIAnalysisResultProps> = ({ result }) => {
         </CardContent>
       </Card>
 
-      <div className="mt-4 overflow-hidden">
-        {renderVisualization()}
-      </div>
+      {renderVisualization()}
     </div>
   );
 };

@@ -16,28 +16,41 @@ interface DashboardOverviewProps {
 }
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ data, fileName }) => {
-  // Data overview analysis
-  const columnTypes = detectColumnTypes(data);
-  const missingValues = analyzeMissingValues(data);
-  const numericColumns = getNumericColumns(data);
-  const categoricalColumns = getCategoricalColumns(data);
+  // Safely handle data analysis
+  let columnTypes = {};
+  let missingValues = {};
+  let numericColumns: string[] = [];
+  let categoricalColumns: string[] = [];
+  let columnTypeCounts = {};
+  let completenessPercentage = 100;
+  let columnsWithHighMissing: [string, { count: number, percentage: number }][] = [];
   
-  // Calculate column type counts
-  const columnTypeCounts = Object.values(columnTypes).reduce((acc: Record<string, number>, type) => {
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {});
-  
-  // Calculate data completeness
-  const totalCells = data.length * Object.keys(data[0]).length;
-  const missingCells = Object.values(missingValues).reduce((sum, { count }) => sum + count, 0);
-  const completenessPercentage = ((totalCells - missingCells) / totalCells) * 100;
-  
-  // Find columns with high missing values
-  const columnsWithHighMissing = Object.entries(missingValues)
-    .filter(([_, info]) => info.percentage > 20)
-    .sort((a, b) => b[1].percentage - a[1].percentage)
-    .slice(0, 5);
+  try {
+    // Data overview analysis
+    columnTypes = detectColumnTypes(data);
+    missingValues = analyzeMissingValues(data);
+    numericColumns = getNumericColumns(data);
+    categoricalColumns = getCategoricalColumns(data);
+    
+    // Calculate column type counts
+    columnTypeCounts = Object.values(columnTypes).reduce((acc: Record<string, number>, type) => {
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+    
+    // Calculate data completeness
+    const totalCells = data.length * Object.keys(data[0] || {}).length;
+    const missingCells = Object.values(missingValues).reduce((sum: number, info: any) => sum + (info?.count || 0), 0);
+    completenessPercentage = totalCells > 0 ? ((totalCells - missingCells) / totalCells) * 100 : 100;
+    
+    // Find columns with high missing values
+    columnsWithHighMissing = Object.entries(missingValues)
+      .filter(([_, info]: [string, any]) => info?.percentage > 20)
+      .sort((a: [string, any], b: [string, any]) => b[1].percentage - a[1].percentage)
+      .slice(0, 5) as [string, { count: number, percentage: number }][];
+  } catch (error) {
+    console.error("Error in DashboardOverview:", error);
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -63,7 +76,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ data, fileName })
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">Columns</p>
-                <p className="text-lg font-bold">{Object.keys(data[0]).length}</p>
+                <p className="text-lg font-bold">{Object.keys(data[0] || {}).length}</p>
               </div>
             </div>
             
@@ -108,7 +121,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ data, fileName })
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Date/Time</p>
                   <p className="text-lg font-bold">
-                    {Object.values(columnTypes).filter(type => 
+                    {Object.values(columnTypes).filter((type: any) => 
                       type === 'date' || type === 'datetime'
                     ).length}
                   </p>
@@ -119,9 +132,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ data, fileName })
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Other</p>
                   <p className="text-lg font-bold">
-                    {Object.keys(data[0]).length - numericColumns.length - 
+                    {Object.keys(data[0] || {}).length - numericColumns.length - 
                      categoricalColumns.length - 
-                     Object.values(columnTypes).filter(type => 
+                     Object.values(columnTypes).filter((type: any) => 
                        type === 'date' || type === 'datetime'
                      ).length}
                   </p>
@@ -137,6 +150,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ data, fileName })
                 {numericColumns.slice(0, 3).map(column => (
                   <p key={column} className="text-xs truncate">• {column}</p>
                 ))}
+                {numericColumns.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No numeric columns detected</p>
+                )}
               </div>
             </div>
           </div>
