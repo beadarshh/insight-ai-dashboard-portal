@@ -7,10 +7,14 @@
 export function calculateStatistics(data: any[], columnName: string) {
   if (!data || data.length === 0) return null;
   
+  // Extract numeric values from the column, ensuring they're actually numbers
   const values = data
-    .map(row => row[columnName])
-    .filter(val => val !== null && val !== undefined && !isNaN(Number(val)))
-    .map(val => Number(val));
+    .map(row => {
+      const val = row[columnName];
+      // Make sure we don't return NaN values which could cause problems later
+      return val !== null && val !== undefined && !isNaN(Number(val)) ? Number(val) : null;
+    })
+    .filter(val => val !== null) as number[];
   
   if (values.length === 0) return null;
   
