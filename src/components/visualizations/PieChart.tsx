@@ -90,7 +90,7 @@ const PieChart: React.FC<PieChartProps> = ({
               <Pie
                 data={dataWithPercentage}
                 cx="50%"
-                cy="45%" {/* Move the pie chart a bit higher to leave more space for labels */}
+                cy="45%" // Move the pie chart a bit higher to leave more space for labels
                 labelLine={false}
                 outerRadius={120}
                 innerRadius={60}
