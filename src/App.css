@@ -1,21 +1,58 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+
+/* Reset some default styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+/* Ensure the app takes full height */
+#root, 
+body, 
+html {
+  height: 100%;
+  width: 100%;
+}
+
+/* Ensure proper container sizing in all views */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Ensure tables don't overflow on mobile */
+table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Maintain chart aspect ratios */
+.recharts-responsive-container {
+  min-height: 300px;
+}
+
+/* Ensure tooltips don't get cut off */
+.recharts-tooltip-wrapper {
+  z-index: 10;
+}
+
+/* Keep logos consistent */
 .logo {
-  height: 6em;
-  padding: 1.5em;
+  height: 2.5em;
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 0.5em rgba(100, 108, 255, 0.6));
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+/* Keep animations */
+@media (prefers-reduced-motion: no-preference) {
+  .logo-animation {
+    animation: logo-spin infinite 20s linear;
+  }
 }
 
 @keyframes logo-spin {
@@ -25,18 +62,4 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
