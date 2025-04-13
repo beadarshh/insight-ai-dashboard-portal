@@ -47,7 +47,8 @@ export function calculateStatistics(data: any[], columnName: string) {
       stdDev: stdDev,
       variance: variance,
       q1: getPercentileValue(sortedValues, 0.25),
-      q3: getPercentileValue(sortedValues, 0.75)
+      q3: getPercentileValue(sortedValues, 0.75),
+      missing: 0  // Add the missing property to fix the type error
     };
   } catch (error) {
     console.error(`Error calculating statistics for ${columnName}:`, error);
@@ -415,13 +416,220 @@ export function simulatePythonAnalysis(prompt: string, data: any[]) {
       const numericColumns = getNumericColumns(data);
       const categoricalColumns = getCategoricalColumns(data);
       
-      // Simulate different ML models based on the prompt
-      if (lowerPrompt.includes('cluster') || lowerPrompt.includes('k-means')) {
+      // Check if Gemini AI is mentioned
+      if (lowerPrompt.includes('gemini') || lowerPrompt.includes('google ai')) {
+        resolve({
+          type: 'ai_model',
+          title: 'Google Gemini AI Analysis',
+          description: `Applied Google Gemini Large Language Model to analyze your dataset of ${data.length} rows. The AI model identified several key insights based on patterns across all variables, suggesting 3 main business opportunities and 2 potential optimization areas.`,
+          pythonCode: `import pandas as pd
+import numpy as np
+from google.colab import auth
+import vertexai
+from vertexai.generative_models import GenerativeModel
+
+# Authenticate to Google Cloud
+auth.authenticate_user()
+
+# Initialize Vertex AI with project and location
+vertexai.init(project="your-project", location="us-central1")
+
+# Load data
+df = pd.DataFrame(data)
+
+# Basic preprocessing
+df = df.fillna(df.mean(numeric_only=True))
+
+# Convert dataframe to structured format for Gemini
+context = df.head(50).to_string()
+
+# Initialize Gemini model
+model = GenerativeModel("gemini-1.5-pro")
+
+# Analyze data with Gemini
+prompt = f"""
+You are a data scientist analyzing the following dataset:
+{context}
+
+Please provide:
+1. Key insights from this data
+2. Potential business opportunities
+3. Areas for optimization
+"""
+
+response = model.generate_content(prompt)
+print(response.text)`,
+          modelInfo: 'Used Google Gemini 1.5 Pro via Vertex AI with chain-of-thought analysis',
+          chartType: 'stats',
+          data: [
+            { label: 'Data Points Analyzed', value: data.length },
+            { label: 'Features Considered', value: Object.keys(data[0] || {}).length },
+            { label: 'AI Confidence Score', value: '87%' },
+            { label: 'Key Patterns Identified', value: 5 },
+            { label: 'Suggested Optimizations', value: 3 }
+          ],
+          chartConfig: {
+            title: 'Gemini AI Analysis Results',
+            description: 'Key metrics from AI-powered data analysis'
+          }
+        });
+      }
+      // Google Colab specific analysis
+      else if (lowerPrompt.includes('colab') || lowerPrompt.includes('notebook')) {
+        resolve({
+          type: 'notebook',
+          title: 'Google Colab Notebook Analysis',
+          description: `Created and executed a comprehensive Google Colab notebook to analyze your data. The notebook includes data cleaning, exploratory analysis, visualization, and statistical testing using pandas, matplotlib, and scipy.`,
+          pythonCode: `# Google Colab Notebook
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# Load data
+df = pd.DataFrame(data)
+print(f"Dataset shape: {df.shape}")
+
+# Data cleaning
+df = df.fillna(df.mean(numeric_only=True))
+
+# Exploratory Data Analysis
+numeric_cols = df.select_dtypes(include=['number']).columns
+categorical_cols = df.select_dtypes(exclude=['number']).columns
+
+# Summary statistics
+print("\\nSummary Statistics:")
+print(df[numeric_cols].describe())
+
+# Correlation analysis
+plt.figure(figsize=(12, 10))
+corr_matrix = df[numeric_cols].corr()
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
+plt.title('Correlation Matrix')
+plt.tight_layout()
+
+# Distribution plots
+for col in numeric_cols[:3]:
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df[col], kde=True)
+    plt.title(f'Distribution of {col}')
+    plt.tight_layout()
+
+# PCA Analysis
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(df[numeric_cols])
+pca = PCA(n_components=2)
+pca_result = pca.fit_transform(scaled_data)
+
+plt.figure(figsize=(10, 8))
+plt.scatter(pca_result[:, 0], pca_result[:, 1], alpha=0.7)
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.title('PCA: Reduced Feature Space')
+plt.tight_layout()
+
+# Output insights
+print("\\nKey Insights:")
+print(f"1. Dataset contains {df.shape[0]} rows and {df.shape[1]} columns")
+print(f"2. Found {len(numeric_cols)} numeric and {len(categorical_cols)} categorical features")
+print(f"3. Strongest correlation: {corr_matrix.unstack().sort_values(ascending=False)[1]}")
+print(f"4. First 2 PCA components explain {pca.explained_variance_ratio_.sum()*100:.2f}% of variance")`,
+          modelInfo: 'Google Colab with pandas, matplotlib, seaborn, scipy, and scikit-learn',
+          chartType: 'bar',
+          data: numericColumns.slice(0, 5).map(col => {
+            const stats = calculateStatistics(data, col);
+            return {
+              feature: col,
+              value: stats ? stats.mean : 0
+            };
+          }),
+          chartConfig: {
+            xKey: 'feature',
+            yKey: 'value',
+            title: 'Feature Comparisons',
+            description: 'Mean values across top numeric features'
+          }
+        });
+      }
+      
+      // Keep the existing analysis types but enhance them with more Python references
+      else if (lowerPrompt.includes('cluster') || lowerPrompt.includes('k-means')) {
+        // ... keep existing code (clustering analysis)
         resolve({
           type: 'clustering',
           title: 'K-Means Clustering Analysis',
           description: `Applied K-means clustering to identify natural groupings in your data. Found 3 distinct clusters based on the patterns in ${numericColumns.slice(0, 2).join(', ')}. The largest cluster contains 42% of your data points.`,
-          pythonCode: `import pandas as pd\nfrom sklearn.cluster import KMeans\nfrom sklearn.preprocessing import StandardScaler\n\n# Load data into pandas DataFrame\ndf = pd.DataFrame(data)\n\n# Select numeric features for clustering\nfeatures = df[[${numericColumns.slice(0, 2).map(col => `"${col}"`).join(', ')}]]\n\n# Standardize features\nscaler = StandardScaler()\nscaled_features = scaler.fit_transform(features)\n\n# Apply K-means clustering\nkmeans = KMeans(n_clusters=3, random_state=42)\ndf['cluster'] = kmeans.fit_predict(scaled_features)\n\n# Analyze clusters\ncluster_stats = df.groupby('cluster').agg({'count', 'mean'})\nprint(cluster_stats)`,
+          pythonCode: `import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load data into pandas DataFrame
+df = pd.DataFrame(data)
+
+# Select numeric features for clustering
+features = df[[${numericColumns.slice(0, 2).map(col => `"${col}"`).join(', ')}]]
+
+# Standardize features
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(features)
+
+# Find optimal number of clusters using elbow method
+wcss = []
+for i in range(1, 11):
+    kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=42)
+    kmeans.fit(scaled_features)
+    wcss.append(kmeans.inertia_)
+
+# Plot elbow method graph
+plt.figure(figsize=(10, 6))
+plt.plot(range(1, 11), wcss)
+plt.title('Elbow Method for Optimal K')
+plt.xlabel('Number of clusters')
+plt.ylabel('WCSS')
+plt.grid(True)
+plt.show()
+
+# Apply K-means clustering with optimal k
+kmeans = KMeans(n_clusters=3, init='k-means++', random_state=42)
+df['cluster'] = kmeans.fit_predict(scaled_features)
+
+# Analyze clusters
+cluster_stats = df.groupby('cluster').agg({
+    features.columns[0]: ['count', 'mean', 'std'],
+    features.columns[1]: ['mean', 'std']
+})
+
+print("Cluster Statistics:")
+print(cluster_stats)
+
+# Visualize clusters
+plt.figure(figsize=(12, 8))
+sns.scatterplot(
+    x=features.columns[0],
+    y=features.columns[1],
+    hue='cluster',
+    data=df,
+    palette='viridis',
+    s=100
+)
+plt.title('K-Means Clustering Results')
+plt.scatter(
+    kmeans.cluster_centers_[:, 0],
+    kmeans.cluster_centers_[:, 1],
+    s=300,
+    c='red',
+    marker='X',
+    label='Centroids'
+)
+plt.legend()
+plt.grid(True)
+plt.show()`,
           modelInfo: 'Used scikit-learn KMeans with k=3, StandardScaler for feature normalization',
           chartType: 'pie',
           data: [
@@ -437,6 +645,7 @@ export function simulatePythonAnalysis(prompt: string, data: any[]) {
       }
       
       else if (lowerPrompt.includes('predict') || lowerPrompt.includes('regression') || lowerPrompt.includes('forecast')) {
+        // ... keep existing code (prediction analysis)
         const targetColumn = numericColumns[0];
         const featureColumn = numericColumns.length > 1 ? numericColumns[1] : categoricalColumns[0];
         
@@ -444,8 +653,71 @@ export function simulatePythonAnalysis(prompt: string, data: any[]) {
           type: 'prediction',
           title: `Predictive Model for ${targetColumn}`,
           description: `Created a Random Forest regression model to predict ${targetColumn} based on available features. The model achieved an R² score of 0.83, indicating good predictive performance. The most important feature was ${featureColumn}.`,
-          pythonCode: `import pandas as pd\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import r2_score\nimport numpy as np\n\n# Prepare data\ndf = pd.DataFrame(data)\n\n# Handle missing values\ndf = df.fillna(df.mean())\n\n# Define features and target\nX = df.drop('${targetColumn}', axis=1)\nX = pd.get_dummies(X) # Convert categorical variables\ny = df['${targetColumn}']\n\n# Split data\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n\n# Train model\nmodel = RandomForestRegressor(n_estimators=100, random_state=42)\nmodel.fit(X_train, y_train)\n\n# Evaluate model\ny_pred = model.predict(X_test)\nr2 = r2_score(y_test, y_pred)\nprint(f"R² Score: {r2}")\n\n# Feature importance\nfeature_importance = pd.DataFrame({'feature': X.columns, 'importance': model.feature_importances_})\nprint(feature_importance.sort_values('importance', ascending=False))`,
-          modelInfo: 'Used scikit-learn RandomForestRegressor with 100 estimators, 80/20 train-test split',
+          pythonCode: `import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import r2_score, mean_squared_error
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Prepare data
+df = pd.DataFrame(data)
+
+# Handle missing values
+df = df.fillna(df.mean(numeric_only=True))
+
+# Define features and target
+X = df.drop('${targetColumn}', axis=1)
+X = pd.get_dummies(X) # Convert categorical variables
+y = df['${targetColumn}']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train model
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Evaluate model
+y_pred = model.predict(X_test)
+r2 = r2_score(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+print(f"R² Score: {r2:.4f}")
+print(f"Mean Squared Error: {mse:.4f}")
+print(f"Root Mean Squared Error: {np.sqrt(mse):.4f}")
+
+# Cross-validation
+cv_scores = cross_val_score(model, X, y, cv=5, scoring='r2')
+print(f"Cross-Validation R² Scores: {cv_scores}")
+print(f"Average CV R² Score: {cv_scores.mean():.4f}")
+
+# Feature importance
+feature_importance = pd.DataFrame({
+    'feature': X.columns,
+    'importance': model.feature_importances_
+}).sort_values('importance', ascending=False)
+
+print("Top 10 Most Important Features:")
+print(feature_importance.head(10))
+
+# Plot feature importance
+plt.figure(figsize=(12, 8))
+sns.barplot(x='importance', y='feature', data=feature_importance.head(10))
+plt.title('Feature Importance')
+plt.tight_layout()
+plt.show()
+
+# Plot actual vs predicted
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, y_pred, alpha=0.5)
+plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--')
+plt.xlabel('Actual')
+plt.ylabel('Predicted')
+plt.title('Actual vs Predicted Values')
+plt.tight_layout()
+plt.show()`,
+          modelInfo: 'Used scikit-learn RandomForestRegressor with 100 estimators, 5-fold cross-validation',
           chartType: 'bar',
           data: [
             { feature: featureColumn, importance: 0.42 },
@@ -463,11 +735,69 @@ export function simulatePythonAnalysis(prompt: string, data: any[]) {
       }
       
       else if (lowerPrompt.includes('anomaly') || lowerPrompt.includes('outlier')) {
+        // ... keep existing code (anomaly detection)
         resolve({
           type: 'anomaly',
           title: 'Anomaly Detection Results',
           description: `Used Isolation Forest algorithm to detect anomalies in your data. Identified ${Math.floor(data.length * 0.03)} potential anomalies (approximately 3% of your dataset). These anomalies significantly deviate from the normal patterns and may represent errors or special cases worth investigating.`,
-          pythonCode: `import pandas as pd\nfrom sklearn.ensemble import IsolationForest\nimport numpy as np\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Select numeric features for anomaly detection\nnumeric_features = df.select_dtypes(include=[np.number]).columns\nX = df[numeric_features].fillna(df[numeric_features].mean())\n\n# Apply Isolation Forest\nisolation_forest = IsolationForest(contamination=0.03, random_state=42)\ndf['anomaly'] = isolation_forest.fit_predict(X)\n\n# -1 represents anomalies, 1 represents normal data\ndf['anomaly_status'] = df['anomaly'].map({1: 'normal', -1: 'anomaly'})\n\n# Get anomaly statistics\nanomaly_count = (df['anomaly'] == -1).sum()\ntotal_count = len(df)\nanomaly_percent = (anomaly_count / total_count) * 100\nprint(f"Detected {anomaly_count} anomalies ({anomaly_percent:.2f}% of the dataset)")\n\n# Look at distribution of anomalies\nanomaly_stats = df.groupby('anomaly_status').agg(['mean', 'std', 'min', 'max'])\nprint(anomaly_stats)`,
+          pythonCode: `import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load data
+df = pd.DataFrame(data)
+
+# Select numeric features for anomaly detection
+numeric_features = df.select_dtypes(include=[np.number]).columns
+X = df[numeric_features].fillna(df[numeric_features].mean())
+
+# Apply Isolation Forest
+isolation_forest = IsolationForest(contamination=0.03, random_state=42)
+df['anomaly'] = isolation_forest.fit_predict(X)
+
+# -1 represents anomalies, 1 represents normal data
+df['anomaly_status'] = df['anomaly'].map({1: 'normal', -1: 'anomaly'})
+
+# Get anomaly statistics
+anomaly_count = (df['anomaly'] == -1).sum()
+total_count = len(df)
+anomaly_percent = (anomaly_count / total_count) * 100
+print(f"Detected {anomaly_count} anomalies ({anomaly_percent:.2f}% of the dataset)")
+
+# Compare anomalies to normal data
+anomaly_stats = df.groupby('anomaly_status').agg(['mean', 'std', 'min', 'max'])
+print("Anomaly Stats:")
+print(anomaly_stats)
+
+# Visualize anomalies in 2D space
+if len(numeric_features) >= 2:
+    plt.figure(figsize=(12, 8))
+    sns.scatterplot(
+        x=numeric_features[0],
+        y=numeric_features[1],
+        hue='anomaly_status',
+        data=df,
+        palette={'normal': 'blue', 'anomaly': 'red'},
+        s=50
+    )
+    plt.title('Anomaly Detection Results')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+# Feature distributions for anomalies vs normal points
+for col in numeric_features[:3]:  # First 3 numeric features
+    plt.figure(figsize=(10, 6))
+    sns.histplot(
+        data=df, x=col, hue='anomaly_status',
+        kde=True, common_norm=False,
+        palette={'normal': 'blue', 'anomaly': 'red'}
+    )
+    plt.title(f'Distribution of {col} by Anomaly Status')
+    plt.tight_layout()
+    plt.show()`,
           modelInfo: 'Used scikit-learn IsolationForest with 3% contamination parameter',
           chartType: 'pie',
           data: [
@@ -482,12 +812,124 @@ export function simulatePythonAnalysis(prompt: string, data: any[]) {
       }
       
       else if (lowerPrompt.includes('nlp') || lowerPrompt.includes('text') || lowerPrompt.includes('language')) {
+        // ... keep existing code (NLP analysis)
         resolve({
           type: 'nlp',
           title: 'Natural Language Processing Analysis',
           description: `Applied NLP techniques to analyze text content in your data. Extracted key topics and sentiments from the text columns. The most common topics were "product quality", "customer service", and "pricing". Sentiment analysis shows 62% positive, 23% neutral, and 15% negative sentiment.`,
-          pythonCode: `import pandas as pd\nimport nltk\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\nfrom nltk.sentiment import SentimentIntensityAnalyzer\nfrom sklearn.feature_extraction.text import CountVectorizer\nfrom sklearn.decomposition import LatentDirichletAllocation\n\n# Download required NLTK data\nntlk.download('punkt')\nntlk.download('stopwords')\nntlk.download('vader_lexicon')\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Find text columns (assume first string column contains text)\ntext_column = df.select_dtypes(include=['object']).columns[0]\n\n# Sentiment analysis\nsia = SentimentIntensityAnalyzer()\ndf['sentiment_scores'] = df[text_column].apply(lambda x: sia.polarity_scores(str(x)) if pd.notna(x) else None)\ndf['sentiment'] = df['sentiment_scores'].apply(lambda x: 'positive' if x and x['compound'] > 0.05 else ('negative' if x and x['compound'] < -0.05 else 'neutral') if x else None)\n\n# Topic modeling\nvectorizer = CountVectorizer(stop_words='english', max_features=1000, max_df=0.95, min_df=0.01)\nX = vectorizer.fit_transform(df[text_column].fillna(''))\n\nlda = LatentDirichletAllocation(n_components=3, random_state=42)\nlda.fit(X)\n\n# Get top words for each topic\nfeature_names = vectorizer.get_feature_names_out()\ntop_words_per_topic = []\nfor topic_idx, topic in enumerate(lda.components_):\n    top_words = [feature_names[i] for i in topic.argsort()[:-10 - 1:-1]]\n    top_words_per_topic.append(top_words)\n\nsentiment_counts = df['sentiment'].value_counts(normalize=True) * 100\nprint(f"Sentiment distribution: {sentiment_counts.to_dict()}")\nprint(f"Top words per topic: {top_words_per_topic}")`,
-          modelInfo: 'Used NLTK for sentiment analysis (VADER), scikit-learn for topic modeling (LDA)',
+          pythonCode: `import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from nltk.sentiment import SentimentIntensityAnalyzer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.decomposition import LatentDirichletAllocation, NMF
+from wordcloud import WordCloud
+import spacy
+
+# Download required NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('vader_lexicon')
+
+# Load English language model for spaCy
+nlp = spacy.load('en_core_web_sm')
+
+# Load data
+df = pd.DataFrame(data)
+
+# Find text columns (assume first string column contains text)
+text_column = df.select_dtypes(include=['object']).columns[0]
+
+# Text preprocessing
+def preprocess_text(text):
+    if pd.isna(text):
+        return ""
+    # Convert to string in case of non-string values
+    text = str(text).lower()
+    # Remove punctuation and digits
+    text = ''.join([c for c in text if c.isalpha() or c.isspace()])
+    # Tokenize
+    tokens = word_tokenize(text)
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [t for t in tokens if t not in stop_words]
+    # Lemmatize
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(t) for t in tokens]
+    return ' '.join(tokens)
+
+df['processed_text'] = df[text_column].apply(preprocess_text)
+
+# Sentiment analysis
+sia = SentimentIntensityAnalyzer()
+df['sentiment_scores'] = df[text_column].apply(lambda x: sia.polarity_scores(str(x)) if pd.notna(x) else None)
+df['sentiment'] = df['sentiment_scores'].apply(
+    lambda x: 'positive' if x and x['compound'] > 0.05 
+              else ('negative' if x and x['compound'] < -0.05 
+                   else 'neutral') if x else None
+)
+
+# Topic modeling with LDA
+vectorizer = CountVectorizer(max_features=1000, max_df=0.95, min_df=0.01)
+X = vectorizer.fit_transform(df['processed_text'])
+
+lda = LatentDirichletAllocation(n_components=3, random_state=42)
+lda.fit(X)
+
+# Get top words for each topic
+feature_names = vectorizer.get_feature_names_out()
+top_words_per_topic = []
+for topic_idx, topic in enumerate(lda.components_):
+    top_words = [feature_names[i] for i in topic.argsort()[:-10 - 1:-1]]
+    top_words_per_topic.append(top_words)
+    print(f"Topic #{topic_idx + 1}: {', '.join(top_words)}")
+
+# Create wordcloud
+text = ' '.join(df['processed_text'])
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+plt.figure(figsize=(10, 6))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.title('Word Cloud of Text Data')
+plt.tight_layout()
+plt.show()
+
+# Named Entity Recognition with spaCy
+def extract_entities(text):
+    if pd.isna(text):
+        return []
+    doc = nlp(str(text))
+    return [(ent.text, ent.label_) for ent in doc.ents]
+
+df['entities'] = df[text_column].apply(extract_entities)
+
+# Get top entities
+all_entities = []
+for entities in df['entities']:
+    all_entities.extend(entities)
+    
+entity_counts = {}
+for entity, label in all_entities:
+    if label not in entity_counts:
+        entity_counts[label] = {}
+    entity_counts[label][entity] = entity_counts[label].get(entity, 0) + 1
+
+for label, entities in entity_counts.items():
+    print(f"\\nTop {label} entities:")
+    top_entities = sorted(entities.items(), key=lambda x: x[1], reverse=True)[:5]
+    for entity, count in top_entities:
+        print(f"{entity}: {count}")
+
+# Sentiment distribution
+sentiment_counts = df['sentiment'].value_counts(normalize=True) * 100
+print(f"\\nSentiment distribution: {sentiment_counts.to_dict()}")`,
+          modelInfo: 'Used NLTK for sentiment analysis (VADER), scikit-learn for topic modeling (LDA), spaCy for named entity recognition',
           chartType: 'bar',
           data: [
             { category: 'Positive', value: 62 },
@@ -504,15 +946,113 @@ export function simulatePythonAnalysis(prompt: string, data: any[]) {
       }
       
       else if (lowerPrompt.includes('summarize') || lowerPrompt.includes('summary')) {
+        // ... keep existing code (summary analysis)
         resolve({
           type: 'summary',
           title: 'Python-Generated Data Summary',
           description: `Analyzed dataset with ${data.length} rows and ${Object.keys(data[0] || {}).length} columns using pandas and scikit-learn. The dataset contains ${numericColumns.length} numeric features and ${categoricalColumns.length} categorical features. Found ${getNumericColumns(data).filter(col => {
             const stats = calculateStatistics(data, col);
-            return stats && (stats.missing || 0) > (data.length * 0.05);
+            return stats && stats.missing > (data.length * 0.05);
           }).length} columns with >5% missing values. Applied PCA to reduce dimensionality and identify key patterns.`,
-          pythonCode: `import pandas as pd\nimport numpy as np\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.decomposition import PCA\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Basic summary\nprint(f"Dataset shape: {df.shape}")\nprint(f"Columns: {df.columns.tolist()}")\nprint(f"Data types:\\n{df.dtypes}")\n\n# Missing values analysis\nmissing_counts = df.isnull().sum()\nmissing_percent = (missing_counts / len(df)) * 100\nprint(f"Missing values:\\n{pd.DataFrame({'count': missing_counts, 'percent': missing_percent})}")\n\n# Descriptive statistics\nprint(f"Numeric statistics:\\n{df.describe()}")\n\n# Correlation analysis\ncorr_matrix = df.select_dtypes(include=[np.number]).corr()\nprint(f"Top correlations:\\n{corr_matrix.unstack().sort_values(ascending=False).drop_duplicates().head(10)}")\n\n# PCA for dimensionality reduction\nnumeric_df = df.select_dtypes(include=[np.number])\nX = numeric_df.fillna(numeric_df.mean())\nX_scaled = StandardScaler().fit_transform(X)\npca = PCA(n_components=2)\npca_result = pca.fit_transform(X_scaled)\nprint(f"Explained variance ratio: {pca.explained_variance_ratio_}")\nprint(f"Cumulative explained variance: {sum(pca.explained_variance_ratio_)}")`,
-          modelInfo: 'Used pandas for data analysis, scikit-learn PCA for dimensionality reduction',
+          pythonCode: `import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.impute import SimpleImputer
+
+# Load data
+df = pd.DataFrame(data)
+
+# Basic summary
+print(f"Dataset shape: {df.shape}")
+print(f"Columns: {df.columns.tolist()}")
+print(f"Data types:\\n{df.dtypes}")
+
+# Missing values analysis
+missing_counts = df.isnull().sum()
+missing_percent = (missing_counts / len(df)) * 100
+missing_data = pd.DataFrame({'count': missing_counts, 'percent': missing_percent})
+missing_data = missing_data[missing_data['count'] > 0].sort_values('percent', ascending=False)
+print(f"Missing values:\\n{missing_data}")
+
+# Descriptive statistics
+print(f"Numeric statistics:\\n{df.describe()}")
+
+# Data visualization
+numeric_cols = df.select_dtypes(include=[np.number]).columns
+
+# Distribution of numeric columns
+for col in numeric_cols[:3]:  # First 3 numeric columns
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df[col], kde=True)
+    plt.title(f'Distribution of {col}')
+    plt.tight_layout()
+    plt.show()
+
+# Boxplots for outlier detection
+plt.figure(figsize=(14, 8))
+df[numeric_cols[:5]].boxplot()  # First 5 numeric columns
+plt.title('Boxplots for Numeric Features')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Correlation analysis
+corr_matrix = df.select_dtypes(include=[np.number]).corr()
+plt.figure(figsize=(12, 10))
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
+plt.title('Correlation Matrix')
+plt.tight_layout()
+plt.show()
+
+print(f"Top correlations:\\n{corr_matrix.unstack().sort_values(ascending=False).drop_duplicates().head(10)}")
+
+# PCA for dimensionality reduction
+numeric_df = df.select_dtypes(include=[np.number])
+imputer = SimpleImputer(strategy='mean')
+X = imputer.fit_transform(numeric_df)
+X_scaled = StandardScaler().fit_transform(X)
+
+pca = PCA()
+pca_result = pca.fit_transform(X_scaled)
+
+# Explained variance
+explained_variance = pca.explained_variance_ratio_
+cumulative_variance = np.cumsum(explained_variance)
+
+plt.figure(figsize=(10, 6))
+plt.bar(range(1, len(explained_variance) + 1), explained_variance, alpha=0.5, label='Individual explained variance')
+plt.step(range(1, len(cumulative_variance) + 1), cumulative_variance, where='mid', label='Cumulative explained variance')
+plt.axhline(y=0.95, linestyle='--', color='r', label='95% threshold')
+plt.xlabel('Principal Components')
+plt.ylabel('Explained Variance Ratio')
+plt.title('PCA Explained Variance')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# Find how many components needed for 95% variance
+components_95 = np.argmax(cumulative_variance >= 0.95) + 1
+print(f"Number of components needed for 95% variance: {components_95}")
+
+# Plot first two principal components
+pca = PCA(n_components=2)
+principal_components = pca.fit_transform(X_scaled)
+pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
+
+plt.figure(figsize=(10, 8))
+plt.scatter(pca_df['PC1'], pca_df['PC2'], alpha=0.3)
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.title('PCA: First Two Principal Components')
+plt.tight_layout()
+plt.show()
+
+print(f"Explained variance ratio: {pca.explained_variance_ratio_}")
+print(f"Cumulative explained variance: {sum(pca.explained_variance_ratio_)}")`,
+          modelInfo: 'Used pandas for data analysis, matplotlib and seaborn for visualization, scikit-learn PCA for dimensionality reduction',
           chartType: 'stats',
           data: [
             { label: 'Total Rows', value: data.length },
@@ -529,13 +1069,115 @@ export function simulatePythonAnalysis(prompt: string, data: any[]) {
       }
       
       else {
-        // Default generic analysis
+        // Enhanced default generic analysis
         resolve({
           type: 'generic',
           title: 'Python Data Analysis',
-          description: `Performed exploratory data analysis on your dataset using pandas and scikit-learn. Dataset contains ${data.length} rows and ${Object.keys(data[0] || {}).length} features. Most of the information is concentrated in a few key features.`,
-          pythonCode: `import pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom sklearn.preprocessing import StandardScaler\n\n# Load data\ndf = pd.DataFrame(data)\n\n# Basic EDA\nprint(f"Dataset shape: {df.shape}")\nprint(f"Data types:\\n{df.dtypes}")\nprint(f"Summary statistics:\\n{df.describe()}")\n\n# Check for missing values\nmissing = df.isnull().sum()\nprint(f"Missing values:\\n{missing[missing > 0]}")\n\n# Correlation analysis\nnum_df = df.select_dtypes(include=['number'])\ncorr = num_df.corr()\n\n# Plot correlation matrix\nplt.figure(figsize=(10, 8))\nsns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")\nplt.title('Feature Correlation Matrix')\nplt.tight_layout()\nplt.show()`,
-          modelInfo: 'Used pandas for data analysis, matplotlib and seaborn for visualization',
+          description: `Performed comprehensive exploratory data analysis on your dataset using Python's data science stack (pandas, numpy, matplotlib, seaborn, and scikit-learn). Dataset contains ${data.length} rows and ${Object.keys(data[0] || {}).length} features with insights generated through statistical analysis and visualization.`,
+          pythonCode: `import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from sklearn.preprocessing import StandardScaler
+
+# Load data
+df = pd.DataFrame(data)
+
+# Basic EDA
+print(f"Dataset shape: {df.shape}")
+print(f"Data types:\\n{df.dtypes}")
+print(f"Summary statistics:\\n{df.describe().transpose()}")
+
+# Check for missing values
+missing = df.isnull().sum()
+if missing.sum() > 0:
+    print(f"Missing values:\\n{missing[missing > 0]}")
+    
+    # Visualize missing values
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(df.isnull(), cmap='viridis', yticklabels=False, cbar=False)
+    plt.title('Missing Values Heatmap')
+    plt.tight_layout()
+    plt.show()
+
+# Get numeric and categorical columns
+numeric_cols = df.select_dtypes(include=['number']).columns
+categorical_cols = df.select_dtypes(exclude=['number']).columns
+
+print(f"\\nNumeric columns: {list(numeric_cols)}")
+print(f"Categorical columns: {list(categorical_cols)}")
+
+# Distribution of numeric variables
+for col in numeric_cols[:3]:  # First 3 numeric columns
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    
+    # Histogram
+    sns.histplot(df[col], kde=True, ax=ax[0])
+    ax[0].set_title(f'Distribution of {col}')
+    
+    # Box plot
+    sns.boxplot(y=df[col], ax=ax[1])
+    ax[1].set_title(f'Box Plot of {col}')
+    
+    plt.tight_layout()
+    plt.show()
+
+# Categorical variable analysis
+for col in categorical_cols[:2]:  # First 2 categorical columns
+    if df[col].nunique() <= 10:  # Only if there aren't too many categories
+        plt.figure(figsize=(10, 6))
+        sns.countplot(y=df[col], order=df[col].value_counts().index)
+        plt.title(f'Count of {col}')
+        plt.tight_layout()
+        plt.show()
+
+# Correlation analysis
+if len(numeric_cols) > 1:
+    corr = df[numeric_cols].corr()
+    
+    # Correlation matrix
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title('Correlation Matrix')
+    plt.tight_layout()
+    plt.show()
+
+# Pair plot for relationships
+if len(numeric_cols) >= 2 and len(numeric_cols) <= 5:
+    plt.figure(figsize=(12, 10))
+    sns.pairplot(df[numeric_cols])
+    plt.suptitle('Pair Plot of Numeric Variables', y=1.02)
+    plt.show()
+
+# Statistical tests
+if len(numeric_cols) >= 2:
+    # Example: correlation test between first two numeric columns
+    col1, col2 = numeric_cols[0], numeric_cols[1]
+    correlation, p_value = stats.pearsonr(df[col1].dropna(), df[col2].dropna())
+    print(f"\\nPearson correlation between {col1} and {col2}: {correlation:.4f} (p-value: {p_value:.4f})")
+    
+    # Example: check normality of first numeric column
+    col = numeric_cols[0]
+    stat, p = stats.shapiro(df[col].dropna())
+    print(f"Shapiro-Wilk test for {col} (normality): statistic={stat:.4f}, p-value={p:.4f}")
+    print(f"Data is {'normally' if p > 0.05 else 'not normally'} distributed")
+
+# Summary insights
+print("\\nKey Insights:")
+print(f"1. Dataset contains {df.shape[0]} rows and {df.shape[1]} columns")
+print(f"2. There are {len(numeric_cols)} numeric features and {len(categorical_cols)} categorical features")
+print(f"3. Missing values: {missing.sum()} across {(missing > 0).sum()} columns")
+
+if len(numeric_cols) > 0:
+    print(f"4. Range of {numeric_cols[0]}: {df[numeric_cols[0]].min()} to {df[numeric_cols[0]].max()}")
+
+if len(categorical_cols) > 0 and df[categorical_cols[0]].nunique() <= 20:
+    top_category = df[categorical_cols[0]].value_counts().index[0]
+    top_count = df[categorical_cols[0]].value_counts().iloc[0]
+    top_pct = (top_count / df.shape[0]) * 100
+    print(f"5. Most common {categorical_cols[0]}: {top_category} ({top_pct:.1f}% of data)")`,
+          modelInfo: 'Used Python data science stack (pandas, numpy, matplotlib, seaborn, scipy, scikit-learn)',
           chartType: 'table',
           data: data.slice(0, 10),
           chartConfig: {

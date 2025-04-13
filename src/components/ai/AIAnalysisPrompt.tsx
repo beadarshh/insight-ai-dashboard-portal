@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, Send, Loader2, BarChart4, LineChart, PieChart, FileSearch, TrendingUp, BrainCog, CodeSquare } from 'lucide-react';
+import { Sparkles, Send, Loader2, BarChart4, LineChart, PieChart, FileSearch, TrendingUp, BrainCog, CodeSquare, Code } from 'lucide-react';
 
 interface AIAnalysisPromptProps {
   onAnalyze: (prompt: string) => void;
@@ -23,7 +23,7 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
   const predefinedQueries = [
     {
       name: "Data Summary",
-      description: "Generate a high-level summary of the data using Python",
+      description: "Generate a high-level summary of the data using Python and pandas",
       icon: <FileSearch className="h-4 w-4" />,
       query: "Summarize this dataset and provide key insights using Python analysis"
     },
@@ -50,6 +50,12 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
       description: "Analyze text columns using NLP techniques",
       icon: <CodeSquare className="h-4 w-4" />,
       query: "Apply NLP techniques to extract insights from text columns"
+    },
+    {
+      name: "Gemini Analysis",
+      description: "Use Google Gemini AI to analyze patterns in the data",
+      icon: <Sparkles className="h-4 w-4" />,
+      query: "Analyze this dataset using Google Gemini AI and provide detailed insights"
     }
   ];
 
@@ -61,7 +67,7 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
     <Card className="h-full">
       <CardContent className="p-4 flex flex-col h-full">
         <div className="flex items-center gap-2 text-primary mb-4">
-          <Sparkles className="h-5 w-5" />
+          <Code className="h-5 w-5" />
           <h3 className="font-medium">Python AI Analysis</h3>
         </div>
         
@@ -69,7 +75,7 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ask a specific question about your data for Python-powered analysis..."
+            placeholder="Ask a specific question about your data for Python and AI-powered analysis..."
             className="min-h-[120px] resize-none flex-grow mb-2"
             disabled={isLoading}
           />
