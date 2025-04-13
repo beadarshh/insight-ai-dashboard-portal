@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, BarChart3, LineChart, PieChart } from 'lucide-react';
+import { Lightbulb, BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LineChart from '../visualizations/LineChart';
 import BarChart from '../visualizations/BarChart';
-import PieChart as PieChartComponent from '../visualizations/PieChart';
+import PieChartComponent from '../visualizations/PieChart';
 import StatisticsCard from '../visualizations/StatisticsCard';
 import DataTable from '../visualizations/DataTable';
 
