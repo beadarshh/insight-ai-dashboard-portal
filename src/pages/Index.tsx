@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,11 +11,10 @@ import {
   PieChart as PieChartIcon, 
   Sparkles,
   Download,
-  RefreshCw
+  Upload
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import FileUpload from '@/components/upload/FileUpload';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import DataTable from '@/components/visualizations/DataTable';
 import BarChart from '@/components/visualizations/BarChart';
@@ -25,6 +25,7 @@ import AIAnalysisPrompt from '@/components/ai/AIAnalysisPrompt';
 import AIAnalysisResult from '@/components/ai/AIAnalysisResult';
 import { useAuth } from '@/providers/AuthProvider';
 import { useData } from '@/providers/DataProvider';
+import { useNavigate } from 'react-router-dom';
 
 import { 
   calculateStatistics, 
@@ -34,7 +35,6 @@ import {
   detectColumnTypes,
   getAutomatedInsights
 } from '@/lib/data-analysis';
-import { cn } from '@/lib/utils';
 
 const mockAIAnalysis = async (prompt: string, data: any[]) => {
   await new Promise(resolve => setTimeout(resolve, 2000));
@@ -147,6 +147,35 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
     }
   }
   
+  if (lowerPrompt.includes('correlation') || lowerPrompt.includes('relationship') || lowerPrompt.includes('related')) {
+    if (numericColumns.length >= 2) {
+      const col1 = numericColumns[0];
+      const col2 = numericColumns[1];
+      
+      const scatterData = data
+        .filter(row => row[col1] !== null && row[col1] !== undefined && row[col2] !== null && row[col2] !== undefined)
+        .slice(0, 50)
+        .map(row => ({
+          x: row[col1],
+          y: row[col2]
+        }));
+      
+      return {
+        type: 'correlation',
+        title: `Correlation between ${col1} and ${col2}`,
+        description: `This chart shows the relationship between ${col1} and ${col2}.`,
+        chartType: 'scatter',
+        data: scatterData,
+        chartConfig: {
+          xKey: 'x',
+          yKey: 'y',
+          title: `${col1} vs ${col2}`,
+          description: 'Each point represents a data point showing the relationship'
+        }
+      };
+    }
+  }
+  
   if (numericColumns.length > 0) {
     const column = numericColumns[0];
     const stats = calculateStatistics(data, column);
@@ -188,11 +217,8 @@ const mockAIAnalysis = async (prompt: string, data: any[]) => {
 
 const Index = () => {
   const { user } = useAuth();
-  const { addFile, addAnalysis, setCurrentData } = useData();
-  
-  const [data, setData] = useState<any[]>([]);
-  const [fileName, setFileName] = useState<string>('');
-  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const navigate = useNavigate();
+  const { currentData, currentFileName, addAnalysis } = useData();
   
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [aiResult, setAiResult] = useState<any>(null);
@@ -202,42 +228,11 @@ const Index = () => {
   const dataRef = useRef<any[]>([]);
   
   useEffect(() => {
-    dataRef.current = data;
-  }, [data]);
-  
-  const handleDataLoaded = (newData: any[], sheets: string[], name: string) => {
-    if (!newData || newData.length === 0 || !newData[0]) {
-      toast.error("No valid data found in the file");
-      return;
+    if (currentData && currentData.length > 0) {
+      dataRef.current = currentData;
+      generateAutomaticVisualizations(currentData);
     }
-    
-    try {
-      setData(newData);
-      setSheetNames(sheets);
-      setFileName(name);
-      
-      setCurrentData(newData, name);
-      
-      if (user) {
-        addFile({
-          fileName: name,
-          uploadDate: new Date(),
-          rowCount: newData.length,
-          columnCount: Object.keys(newData[0] || {}).length,
-          fileSize: `${Math.round((JSON.stringify(newData).length / 1024) * 10) / 10} KB`
-        });
-      }
-      
-      setAiResult(null);
-      
-      generateAutomaticVisualizations(newData);
-      
-      toast.success("File processed successfully!");
-    } catch (error) {
-      console.error("Error handling data:", error);
-      toast.error("Error processing file data");
-    }
-  };
+  }, [currentData]);
   
   const generateAutomaticVisualizations = (data: any[]) => {
     if (!data || data.length === 0 || !data[0]) return;
@@ -325,35 +320,6 @@ const Index = () => {
             ]
           });
         }
-        
-        if (numericColumns.length > 1) {
-          const numColumn2 = numericColumns[1];
-          
-          const scatterData = data
-            .filter(row => 
-              row[numColumn] !== null && row[numColumn] !== undefined && 
-              row[numColumn2] !== null && row[numColumn2] !== undefined
-            )
-            .slice(0, 100)
-            .map(row => ({
-              x: Number(row[numColumn]),
-              y: Number(row[numColumn2])
-            }));
-          
-          if (scatterData.length > 10) {
-            visualizations.push({
-              type: 'scatter',
-              title: `${numColumn} vs ${numColumn2}`,
-              data: scatterData,
-              config: {
-                xKey: 'x',
-                yKey: 'y',
-                xLabel: numColumn,
-                yLabel: numColumn2
-              }
-            });
-          }
-        }
       }
       
       const columnTypes = detectColumnTypes(data);
@@ -415,7 +381,7 @@ const Index = () => {
   };
   
   const handleAIAnalysis = async (prompt: string) => {
-    if (data.length === 0) {
+    if (!currentData || currentData.length === 0) {
       toast.error("Please upload data before requesting AI analysis");
       return;
     }
@@ -423,7 +389,7 @@ const Index = () => {
     setIsAnalyzing(true);
     
     try {
-      const result = await mockAIAnalysis(prompt, data);
+      const result = await mockAIAnalysis(prompt, currentData);
       
       const analysisResult = {
         query: prompt,
@@ -438,7 +404,7 @@ const Index = () => {
           query: prompt,
           timestamp: new Date(),
           fileId: 'current',
-          fileName: fileName,
+          fileName: currentFileName || 'Unknown file',
           resultType: result.type
         });
       }
@@ -477,7 +443,7 @@ const Index = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${fileName.split('.')[0] || 'export'}_analysis.csv`);
+      link.setAttribute('download', `${currentFileName?.split('.')[0] || 'export'}_analysis.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -558,43 +524,53 @@ const Index = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {data.length === 0 ? (
+        {(!currentData || currentData.length === 0) ? (
           <Card className="border-dashed">
             <CardHeader>
               <CardTitle>Welcome to InsightAI Dashboard</CardTitle>
               <CardDescription>
-                Upload an Excel file to start exploring your data and generating insights
+                Upload an Excel or CSV file to start exploring your data and generating insights
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <FileUpload onDataLoaded={handleDataLoaded} />
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex gap-4 flex-wrap">
+                <Button 
+                  onClick={() => navigate('/upload')} 
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload New File
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/reports')}
+                  className="flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  View Previous Reports
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
           <>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">{fileName}</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{currentFileName}</h1>
                 <p className="text-muted-foreground">
-                  {data.length.toLocaleString()} rows • {Object.keys(data[0] || {}).length} columns • {sheetNames.length} sheets
+                  {currentData.length.toLocaleString()} rows • {Object.keys(currentData[0] || {}).length} columns
                 </p>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => {
-                    setData([]);
-                    setFileName('');
-                    setSheetNames([]);
-                    setAiResult(null);
-                    setAutomaticVisualizations([]);
-                    setCurrentData(null, null);
-                  }}
+                  onClick={() => navigate('/upload')}
                   className="flex items-center gap-2"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <Upload className="h-4 w-4" />
                   <span>New Upload</span>
                 </Button>
                 
@@ -637,13 +613,15 @@ const Index = () => {
               </div>
               
               <TabsContent value="overview" className="space-y-6">
-                <DashboardOverview data={data} fileName={fileName} />
+                {currentData && (
+                  <DashboardOverview data={currentData} fileName={currentFileName || ''} />
+                )}
                 
                 <div className="mt-6">
                   <h2 className="text-xl font-semibold mb-4">Data Preview</h2>
                   <div className="overflow-hidden rounded-lg border">
                     <DataTable 
-                      data={data.slice(0, 10)} 
+                      data={currentData?.slice(0, 10) || []} 
                       title="First 10 Rows" 
                     />
                   </div>
@@ -664,7 +642,7 @@ const Index = () => {
               <TabsContent value="data" className="space-y-6 overflow-hidden">
                 <div className="overflow-hidden rounded-lg border">
                   <DataTable 
-                    data={data} 
+                    data={currentData || []} 
                     title="Complete Dataset" 
                   />
                 </div>
@@ -672,8 +650,8 @@ const Index = () => {
               
               <TabsContent value="statistics" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {getNumericColumns(data).slice(0, 4).map(column => {
-                    const stats = calculateStatistics(data, column);
+                  {getNumericColumns(currentData || []).slice(0, 4).map(column => {
+                    const stats = calculateStatistics(currentData || [], column);
                     if (!stats) return null;
                     
                     return (
@@ -711,12 +689,12 @@ const Index = () => {
                     ) : (
                       <Card className="h-full flex items-center justify-center bg-muted/50">
                         <CardContent className="py-12 text-center">
-                          <div className="mx-auto w-12 h-12 rounded-full bg-insight-100 flex items-center justify-center mb-4">
-                            <Sparkles className="h-6 w-6 text-insight-600" />
+                          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                            <Sparkles className="h-6 w-6 text-primary" />
                           </div>
                           <h3 className="text-lg font-medium mb-2">AI Analysis</h3>
                           <p className="text-muted-foreground max-w-md mx-auto">
-                            Ask a question about your data to generate AI-powered insights and visualizations
+                            Ask a specific question about your data to generate AI-powered insights and visualizations
                           </p>
                         </CardContent>
                       </Card>

@@ -1,14 +1,12 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   BarChart3, 
   FileText, 
   Upload, 
   UserRound, 
-  LogOut, 
-  Settings,
-  ChevronDown
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,7 +38,6 @@ const Navigation = () => {
           <Button variant="ghost" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             <span>Dashboard</span>
-            <ChevronDown className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[220px] p-2">
@@ -79,10 +76,9 @@ const Navigation = () => {
       {/* Profile Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 text-insight-600">
+          <Button variant="ghost" className="flex items-center gap-2">
             <UserRound className="w-4 h-4" />
             <span>Profile</span>
-            <ChevronDown className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[220px] p-2">
@@ -98,16 +94,6 @@ const Navigation = () => {
             )}>
               <UserRound className="w-4 h-4" />
               <span>My Profile</span>
-            </DropdownMenuItem>
-          </Link>
-          
-          <Link to="/settings">
-            <DropdownMenuItem className={cn(
-              "flex items-center gap-3 p-2 cursor-pointer",
-              location.pathname === "/settings" && "bg-accent"
-            )}>
-              <Settings className="w-4 h-4" />
-              <span>Settings</span>
             </DropdownMenuItem>
           </Link>
           

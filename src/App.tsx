@@ -9,6 +9,8 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
 import Profile from "./pages/Profile/Profile";
+import Reports from "./pages/Reports";
+import Upload from "./pages/Upload";
 import { AuthProvider, useAuth } from "./providers/AuthProvider";
 import { DataProvider } from "./providers/DataProvider";
 
@@ -64,6 +66,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/upload" 
+        element={
+          <ProtectedRoute>
+            <Upload />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/reports" 
+        element={
+          <ProtectedRoute>
+            <Reports />
           </ProtectedRoute>
         } 
       />
