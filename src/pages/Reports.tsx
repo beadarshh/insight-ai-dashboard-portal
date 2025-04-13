@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/providers/DataProvider';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { toast } from 'sonner';
 
 const Reports = () => {
   const { files, setSelectedFile, analyses } = useData();
@@ -22,6 +23,7 @@ const Reports = () => {
   const handleFileSelect = (file: any) => {
     setSelectedFile(file);
     navigate('/');
+    toast.success(`Viewing analysis for ${file.fileName}`);
   };
 
   return (
@@ -77,7 +79,7 @@ const Reports = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredFiles.map((file, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={file.id || index}>
                         <TableCell className="font-medium">{file.fileName}</TableCell>
                         <TableCell>
                           {format(new Date(file.uploadDate), 'MMM d, yyyy')}
@@ -124,7 +126,7 @@ const Reports = () => {
                   </TableHeader>
                   <TableBody>
                     {analyses.map((analysis, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={analysis.id || index}>
                         <TableCell className="font-medium truncate max-w-[300px]">
                           {analysis.query}
                         </TableCell>

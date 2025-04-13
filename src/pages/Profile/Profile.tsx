@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileIcon, UserRound, History, Save } from 'lucide-react';
+import { FileIcon, UserRound, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 import { useData } from '@/providers/DataProvider';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const { user, updateUser, logout } = useAuth();
-  const { files, analyses } = useData();
+  const { files, analyses, setSelectedFile } = useData();
+  const navigate = useNavigate();
   
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -41,6 +43,12 @@ const Profile = () => {
   const handleLogout = () => {
     logout();
     toast.info('Logged out successfully');
+  };
+  
+  const handleViewAnalysis = (file: any) => {
+    setSelectedFile(file);
+    navigate('/');
+    toast.success(`Viewing analysis for ${file.fileName}`);
   };
   
   return (
@@ -108,7 +116,7 @@ const Profile = () => {
                       className="w-full" 
                       disabled={isUpdating}
                     >
-                      <Save className="mr-2 h-4 w-4" /> Save Changes
+                      Save Changes
                     </Button>
                   </div>
                 </form>
@@ -143,7 +151,9 @@ const Profile = () => {
                             </div>
                           </div>
                           <div className="mt-3 md:mt-0">
-                            <Button size="sm" variant="outline">View Analysis</Button>
+                            <Button size="sm" variant="outline" onClick={() => handleViewAnalysis(file)}>
+                              View Analysis
+                            </Button>
                           </div>
                         </div>
                       </Card>

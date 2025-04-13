@@ -58,10 +58,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
       return;
     }
     
-    // Check file size (limit to 5MB for demo)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Check file size (increased from 5MB to 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
-      setError('File size exceeds 5MB limit');
+      setError('File size exceeds 50MB limit');
       return;
     }
     
@@ -273,7 +273,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
               Drag and drop your file here, or click to browse
             </p>
             <p className="text-xs text-muted-foreground">
-              Supports .xlsx, .xls and .csv files up to 5MB
+              Supports .xlsx, .xls and .csv files up to 50MB
             </p>
           </div>
         </div>

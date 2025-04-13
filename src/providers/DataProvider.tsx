@@ -1,7 +1,7 @@
-
 import React, { createContext, useState, useContext } from 'react';
 
 interface File {
+  id?: string; // Added id property
   fileName: string;
   uploadDate: Date;
   rowCount: number;
@@ -11,6 +11,7 @@ interface File {
 }
 
 interface Analysis {
+  id?: string; // Added id property
   query: string;
   timestamp: Date;
   fileId: string;
@@ -65,17 +66,25 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       const updatedFiles = [...files];
       updatedFiles[existingFileIndex] = {
         ...file,
+        id: updatedFiles[existingFileIndex].id || `file-${Date.now()}`,
         uploadDate: new Date() // Update upload date
       };
       setFiles(updatedFiles);
     } else {
-      // Add new file
-      setFiles(prevFiles => [...prevFiles, { ...file }]);
+      // Add new file with unique ID
+      setFiles(prevFiles => [...prevFiles, { 
+        ...file,
+        id: `file-${Date.now()}` 
+      }]);
     }
   };
   
   const addAnalysis = (analysis: Analysis) => {
-    setAnalyses(prevAnalyses => [analysis, ...prevAnalyses]);
+    // Add unique ID to analysis
+    setAnalyses(prevAnalyses => [
+      { ...analysis, id: `analysis-${Date.now()}` }, 
+      ...prevAnalyses
+    ]);
   };
   
   const setSelectedFile = (file: File | null) => {
