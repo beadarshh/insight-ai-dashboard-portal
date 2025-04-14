@@ -110,7 +110,7 @@ const AIAnalysisResult: React.FC<AIAnalysisResultProps> = ({ result }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-insight-400" />
-            Python AI Analysis Results
+            AI Insight Results
           </CardTitle>
           <CardDescription>
             Results for: "{result.query}"
@@ -133,7 +133,7 @@ const AIAnalysisResult: React.FC<AIAnalysisResultProps> = ({ result }) => {
             <div className="mt-4">
               <div className="flex items-center gap-2 text-gray-700 mb-1">
                 <CodeSquare className="h-4 w-4" />
-                <span className="text-sm font-medium">Python Code Used</span>
+                <span className="text-sm font-medium">Python Analysis Code</span>
               </div>
               <pre className="p-3 bg-gray-50 rounded-md overflow-auto text-xs border">
                 <code>{response.pythonCode}</code>

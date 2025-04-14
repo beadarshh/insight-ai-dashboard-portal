@@ -1,22 +1,25 @@
+
 import React, { createContext, useState, useContext } from 'react';
 
 interface File {
-  id?: string; // Added id property
+  id?: string;
   fileName: string;
   uploadDate: Date;
   rowCount: number;
   columnCount: number;
   fileSize: string;
   data?: any[];
+  pythonAnalysisReady?: boolean; // Added to track Python backend processing status
 }
 
 interface Analysis {
-  id?: string; // Added id property
+  id?: string;
   query: string;
   timestamp: Date;
   fileId: string;
   fileName: string;
   resultType: string;
+  pythonBackendUsed?: boolean; // Added to track Python backend usage
 }
 
 interface DataContextType {
@@ -29,6 +32,7 @@ interface DataContextType {
   addFile: (file: File) => void;
   addAnalysis: (analysis: Analysis) => void;
   setSelectedFile: (file: File | null) => void;
+  markFileAsProcessed: (fileId: string) => void; // New function to mark file as processed by Python
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -67,14 +71,16 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       updatedFiles[existingFileIndex] = {
         ...file,
         id: updatedFiles[existingFileIndex].id || `file-${Date.now()}`,
-        uploadDate: new Date() // Update upload date
+        uploadDate: new Date(), // Update upload date
+        pythonAnalysisReady: file.pythonAnalysisReady || updatedFiles[existingFileIndex].pythonAnalysisReady
       };
       setFiles(updatedFiles);
     } else {
       // Add new file with unique ID
       setFiles(prevFiles => [...prevFiles, { 
         ...file,
-        id: `file-${Date.now()}` 
+        id: `file-${Date.now()}`,
+        pythonAnalysisReady: false // Default to not processed
       }]);
     }
   };
@@ -94,6 +100,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     }
   };
   
+  // New function to mark a file as processed by Python backend
+  const markFileAsProcessed = (fileId: string) => {
+    setFiles(prevFiles => 
+      prevFiles.map(file => 
+        file.id === fileId 
+          ? { ...file, pythonAnalysisReady: true }
+          : file
+      )
+    );
+  };
+  
   return (
     <DataContext.Provider
       value={{
@@ -106,6 +123,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
         addFile,
         addAnalysis,
         setSelectedFile,
+        markFileAsProcessed,
       }}
     >
       {children}

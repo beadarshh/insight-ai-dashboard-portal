@@ -421,10 +421,10 @@ const Index = () => {
         });
       }
       
-      toast.success("Python AI analysis complete!");
+      toast.success("AI analysis complete!");
     } catch (error) {
       console.error("Error in AI analysis:", error);
-      toast.error("Failed to generate Python analysis");
+      toast.error("Failed to generate AI analysis");
     } finally {
       setIsAnalyzing(false);
     }
@@ -541,7 +541,7 @@ const Index = () => {
             <CardHeader>
               <CardTitle>Welcome to InsightAI Dashboard</CardTitle>
               <CardDescription>
-                Upload an Excel or CSV file to start exploring your data and generating insights with Python and AI
+                Upload an Excel or CSV file to start exploring your data and generating insights with AI
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -619,7 +619,7 @@ const Index = () => {
                   </TabsTrigger>
                   <TabsTrigger value="ai-insights" className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
-                    <span className="hidden sm:inline">Python AI</span>
+                    <span className="hidden sm:inline">AI Insight</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -704,9 +704,9 @@ const Index = () => {
                           <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                             <Sparkles className="h-6 w-6 text-primary" />
                           </div>
-                          <h3 className="text-lg font-medium mb-2">Python AI Analysis</h3>
+                          <h3 className="text-lg font-medium mb-2">AI Insight</h3>
                           <p className="text-muted-foreground max-w-md mx-auto">
-                            Ask a specific question about your data to generate Python-powered insights and visualizations using libraries like pandas, scikit-learn, and matplotlib
+                            Ask a specific question about your data to generate AI-powered insights and visualizations using advanced analysis techniques
                           </p>
                         </CardContent>
                       </Card>

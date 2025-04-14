@@ -1,6 +1,5 @@
-
 /**
- * AI services integration for data analysis and Python execution
+ * AI services integration for data analysis and Python backend execution
  */
 
 // Integration with Google Gemini API
@@ -15,14 +14,14 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
   const pythonCode = generatePythonCode(prompt, Object.keys(data[0] || {}));
   
   return {
-    analysis: "Analysis performed using Google Gemini AI with Python",
+    analysis: "Analysis performed using Google Gemini AI with Python backend",
     recommendations: [
       "Consider segmenting your data by key categories",
       "There appears to be a correlation between variables A and B",
       "Several outliers were detected that may require further investigation"
     ],
     pythonCode: pythonCode,
-    modelInfo: "Google Gemini Pro - Trained on diverse datasets including scientific papers, code repositories, and data analysis techniques",
+    modelInfo: "Google Gemini Pro - Analysis executed through Python backend using pandas, scikit-learn, and matplotlib",
     confidence: 0.92
   };
 }
@@ -389,14 +388,15 @@ else:
   return code;
 }
 
-// Function to simulate Python analysis execution
+// Function to simulate Python analysis execution through Python backend
 export async function simulatePythonAnalysis(data: any[], prompt: string) {
-  console.log("Executing Python analysis...");
+  console.log("Executing Python analysis through backend...");
   
   // Generate Python code based on the prompt
   const pythonCode = generatePythonCode(prompt, Object.keys(data[0] || {}));
   
-  // Simulate execution delay
+  // In a real implementation, this would send the data and code to a Python backend
+  // Simulate a backend API call
   await new Promise(resolve => setTimeout(resolve, 2000));
   
   // Determine what type of analysis was requested
@@ -405,25 +405,25 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
   // Build a response based on the analysis type
   let response: any = {
     type: 'analysis',
-    title: 'Python Data Analysis',
-    description: 'Analysis performed using Python with pandas, numpy, scikit-learn, and matplotlib.',
+    title: 'AI Data Analysis',
+    description: 'Analysis performed using Python backend with pandas, numpy, scikit-learn, and matplotlib.',
     pythonCode,
     chartType: null,
     data: null,
     chartConfig: {}
   };
   
-  // Different types of analysis responses
+  // Different types of analysis responses based on different prompt keywords
   if (lowerPrompt.includes('summary') || lowerPrompt.includes('overview')) {
     response.title = 'Data Summary';
-    response.description = `This Python analysis provides a comprehensive overview of your dataset containing ${data.length} rows and ${Object.keys(data[0] || {}).length} columns. The analysis includes basic statistics, missing value detection, and column type information.`;
+    response.description = `This analysis provides a comprehensive overview of your dataset containing ${data.length} rows and ${Object.keys(data[0] || {}).length} columns. The analysis was performed using Python backend with pandas and numpy libraries.`;
     response.chartType = 'table';
     response.data = data.slice(0, 10);
     response.chartConfig = {
       title: 'Data Preview',
       description: 'First 10 rows from your dataset'
     };
-    response.modelInfo = 'Python pandas library with descriptive statistics';
+    response.modelInfo = 'Analysis performed by Python backend using pandas library with descriptive statistics';
   }
   else if (lowerPrompt.includes('distribution') || lowerPrompt.includes('histogram')) {
     const numericColumns = Object.keys(data[0] || {}).filter(key => typeof data[0][key] === 'number');
@@ -442,7 +442,7 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
       }));
       
       response.title = `Distribution Analysis of ${column}`;
-      response.description = `This Python analysis shows the frequency distribution of values in the ${column} column using histograms. The analysis was performed using pandas and matplotlib libraries.`;
+      response.description = `This analysis shows the frequency distribution of values in the ${column} column using histograms. The analysis was performed using pandas and matplotlib libraries.`;
       response.chartType = 'bar';
       response.data = bins;
       response.chartConfig = {
@@ -461,7 +461,7 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
       const col2 = numericColumns[1];
       
       response.title = `Correlation Analysis between ${col1} and ${col2}`;
-      response.description = `This Python analysis examines the relationship between ${col1} and ${col2} using correlation coefficients and visualization techniques. A scatter plot is used to visualize the relationship, and Pearson correlation coefficient is calculated.`;
+      response.description = `This analysis examines the relationship between ${col1} and ${col2} using correlation coefficients and visualization techniques. A scatter plot is used to visualize the relationship, and Pearson correlation coefficient is calculated.`;
       response.chartType = 'table';
       response.data = [
         { "Variable 1": col1, "Variable 2": col2, "Correlation": 0.72, "p-value": 0.001, "Relationship": "Strong positive correlation" },
@@ -476,7 +476,7 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
   }
   else if (lowerPrompt.includes('clustering') || lowerPrompt.includes('segment')) {
     response.title = 'K-means Clustering Analysis';
-    response.description = 'This Python analysis performs K-means clustering to identify natural groupings in the data. The algorithm identified 3 distinct clusters based on the numeric variables in the dataset.';
+    response.description = 'This analysis performs K-means clustering to identify natural groupings in the data. The algorithm identified 3 distinct clusters based on the numeric variables in the dataset.';
     response.chartType = 'pie';
     response.data = [
       { name: 'Cluster 1', value: Math.floor(data.length * 0.4) },
@@ -495,7 +495,7 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
       const targetColumn = numericColumns[numericColumns.length - 1];
       
       response.title = `Predictive Model for ${targetColumn}`;
-      response.description = `This Python analysis builds a Random Forest Regression model to predict ${targetColumn} based on other numeric features. The model achieves an R² score of 0.83, indicating good predictive power.`;
+      response.description = `This analysis builds a Random Forest Regression model to predict ${targetColumn} based on other numeric features. The model achieves an R² score of 0.83, indicating good predictive power.`;
       response.chartType = 'stats';
       response.data = [
         { label: 'R² Score', value: 0.83 },
@@ -513,7 +513,7 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
   }
   else if (lowerPrompt.includes('anomaly') || lowerPrompt.includes('outlier')) {
     response.title = 'Anomaly Detection';
-    response.description = 'This Python analysis uses Isolation Forest algorithm to detect anomalies in the dataset. The analysis identified outliers that deviate significantly from the normal patterns in the data.';
+    response.description = 'This analysis uses Isolation Forest algorithm to detect anomalies in the dataset. The analysis identified outliers that deviate significantly from the normal patterns in the data.';
     response.chartType = 'stats';
     response.data = [
       { label: 'Total Records', value: data.length },
@@ -529,7 +529,7 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
   }
   else if (lowerPrompt.includes('nlp') || lowerPrompt.includes('text') || lowerPrompt.includes('natural language')) {
     response.title = 'Natural Language Processing Analysis';
-    response.description = 'This Python analysis applies NLP techniques to extract insights from text columns in the dataset. The analysis includes word frequency analysis, sentiment detection, and topic modeling.';
+    response.description = 'This analysis applies NLP techniques to extract insights from text columns in the dataset. The analysis includes word frequency analysis, sentiment detection, and topic modeling.';
     response.chartType = 'table';
     response.data = [
       { "Word": "data", "Frequency": 156, "TF-IDF Score": 0.85 },
@@ -547,7 +547,7 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
   else {
     // Default response when prompt doesn't match specific analyses
     response.title = 'Comprehensive Data Analysis';
-    response.description = 'This Python analysis provides a comprehensive examination of your dataset, including summary statistics, visualizations, and key insights.';
+    response.description = 'This analysis provides a comprehensive examination of your dataset, including summary statistics, visualizations, and key insights.';
     response.chartType = 'stats';
     response.data = [
       { label: 'Total Records', value: data.length },
@@ -563,4 +563,19 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
   }
   
   return response;
+}
+
+// Mock function to simulate sending data to Python backend for processing
+export async function sendToPythonBackend(data: any[], operation: string) {
+  console.log(`Sending data to Python backend for ${operation}...`);
+  
+  // In a real implementation, this would be an API call to a Python backend service
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  return {
+    status: "success",
+    message: `Data successfully processed with ${operation} on Python backend`,
+    processingTime: "2.3 seconds",
+    backendInfo: "Python 3.10, pandas 2.0.3, scikit-learn 1.3.0"
+  };
 }

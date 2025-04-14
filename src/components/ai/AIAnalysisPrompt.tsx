@@ -23,9 +23,9 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
   const predefinedQueries = [
     {
       name: "Data Summary",
-      description: "Generate a high-level summary of the data using Python and pandas",
+      description: "Generate a high-level summary of the data using AI analysis",
       icon: <FileSearch className="h-4 w-4" />,
-      query: "Summarize this dataset and provide key insights using Python analysis"
+      query: "Summarize this dataset and provide key insights"
     },
     {
       name: "ML Clustering",
@@ -37,13 +37,13 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
       name: "Predictive Model",
       description: "Create a predictive model for numeric columns",
       icon: <TrendingUp className="h-4 w-4" />,
-      query: "Build a prediction model for the most important numeric column using scikit-learn"
+      query: "Build a prediction model for the most important numeric column"
     },
     {
       name: "Anomaly Detection",
       description: "Find outliers and anomalies in the dataset",
       icon: <BarChart4 className="h-4 w-4" />,
-      query: "Detect anomalies and outliers in the data using IsolationForest algorithm"
+      query: "Detect anomalies and outliers in the data using machine learning"
     },
     {
       name: "NLP Analysis",
@@ -67,15 +67,15 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
     <Card className="h-full">
       <CardContent className="p-4 flex flex-col h-full">
         <div className="flex items-center gap-2 text-primary mb-4">
-          <Code className="h-5 w-5" />
-          <h3 className="font-medium">Python AI Analysis</h3>
+          <Sparkles className="h-5 w-5" />
+          <h3 className="font-medium">AI Insight</h3>
         </div>
         
         <form onSubmit={handleSubmit} className="flex flex-col h-full gap-4">
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ask a specific question about your data for Python and AI-powered analysis..."
+            placeholder="Ask a specific question about your data for AI-powered analysis..."
             className="min-h-[120px] resize-none flex-grow mb-2"
             disabled={isLoading}
           />
@@ -106,12 +106,12 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Running Python Analysis...
+                Running AI Analysis...
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
-                Analyze with Python
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate AI Insight
               </>
             )}
           </Button>
