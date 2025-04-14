@@ -1,11 +1,10 @@
-
 /**
  * AI services integration for data analysis and Python backend execution
  */
 
 // Integration with Google Gemini API - using environment variables or input for API key
 // In a real implementation, this would use the actual Gemini API key from Supabase Secret or similar
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 export async function analyzeWithGemini(data: any[], prompt: string) {
   console.log("Calling Google Gemini API with data sample...");
