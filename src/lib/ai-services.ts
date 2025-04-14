@@ -16,7 +16,7 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
         {
           parts: [
             {
-              text: `Analyze the following dataset and respond to this prompt: ${prompt}\n\nData sample (first 5 rows):\n${JSON.stringify(data.slice(0, 5), null, 2)}`
+              text: "Analyze the following dataset and respond to this prompt: " + prompt + "\n\nData sample (first 5 rows):\n" + JSON.stringify(data.slice(0, 5), null, 2)
             }
           ]
         }
@@ -29,7 +29,7 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
 
     // Call the actual Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY,
       {
         method: "POST",
         headers: {
@@ -42,7 +42,7 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API Error:", errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error("Gemini API error: " + response.status);
     }
 
     const result = await response.json();
@@ -138,7 +138,7 @@ function generateMockCodeOutput(pythonCode: string, data: any[]) {
   let output = "# Code Execution Output\n\n";
   
   // Add information about the data
-  output += `Dataset loaded with ${data.length} rows and ${Object.keys(data[0] || {}).length} columns.\n\n`;
+  output += "Dataset loaded with " + data.length + " rows and " + Object.keys(data[0] || {}).length + " columns.\n\n";
   
   // Add basic data sample
   output += "Sample data (first 5 rows):\n";
@@ -188,7 +188,7 @@ function generateMockCodeOutput(pythonCode: string, data: any[]) {
   if (printStatements.length > 0) {
     output += "Print Statement Outputs:\n";
     printStatements.forEach(statement => {
-      output += `${statement.replace('print(', '').replace(')', '')}: [simulated output]\n`;
+      output += statement.replace('print(', '').replace(')', '') + ": [simulated output]\n";
     });
   }
   
@@ -197,7 +197,7 @@ function generateMockCodeOutput(pythonCode: string, data: any[]) {
 
 // Integration with Google Colab
 export async function generateColabNotebook(data: any[], analysisType: string) {
-  console.log(`Generating Google Colab notebook for ${analysisType} analysis...`);
+  console.log("Generating Google Colab notebook for " + analysisType + " analysis...");
   
   // In a real implementation, this could generate a notebook and return a link
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -737,14 +737,14 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
 
 // Mock function to simulate sending data to Python backend for processing
 export async function sendToPythonBackend(data: any[], operation: string) {
-  console.log(`Sending data to Python backend for ${operation}...`);
+  console.log("Sending data to Python backend for " + operation + "...");
   
   // In a real implementation, this would be an API call to a Python backend service
   await new Promise(resolve => setTimeout(resolve, 1500));
   
   return {
     status: "success",
-    message: `Data successfully processed with ${operation} on Python backend`,
+    message: "Data successfully processed with " + operation + " on Python backend",
     processingTime: "2.3 seconds",
     backendInfo: "Python 3.10, pandas 2.0.3, scikit-learn 1.3.0"
   };
