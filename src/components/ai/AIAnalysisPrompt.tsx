@@ -6,17 +6,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, Send, Loader2, BarChart4, LineChart, PieChart, FileSearch, TrendingUp, BrainCog, CodeSquare, Code } from 'lucide-react';
 
 interface AIAnalysisPromptProps {
-  onAnalyze: (prompt: string) => void;
+  onAnalyze: (prompt: string, useGemini?: boolean) => void;
   isLoading: boolean;
 }
 
 const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoading }) => {
   const [prompt, setPrompt] = useState('');
+  const [useGemini, setUseGemini] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim() && !isLoading) {
-      onAnalyze(prompt.trim());
+      onAnalyze(prompt.trim(), useGemini);
     }
   };
   
@@ -59,8 +60,9 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
     }
   ];
 
-  const handlePredefinedQuery = (query: string) => {
+  const handlePredefinedQuery = (query: string, isGemini: boolean = false) => {
     setPrompt(query);
+    setUseGemini(isGemini || query.toLowerCase().includes('gemini'));
   };
 
   return (
@@ -87,8 +89,8 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
                 type="button" 
                 variant="outline" 
                 size="sm"
-                className="text-xs flex items-center gap-1"
-                onClick={() => handlePredefinedQuery(item.query)}
+                className={`text-xs flex items-center gap-1 ${item.name === "Gemini Analysis" ? "border-primary/50 bg-primary/5" : ""}`}
+                onClick={() => handlePredefinedQuery(item.query, item.name === "Gemini Analysis")}
                 disabled={isLoading}
                 title={item.description}
               >
@@ -98,23 +100,39 @@ const AIAnalysisPrompt: React.FC<AIAnalysisPromptProps> = ({ onAnalyze, isLoadin
             ))}
           </div>
           
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={!prompt.trim() || isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Running AI Analysis...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate AI Insight
-              </>
-            )}
-          </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="useGemini"
+                checked={useGemini}
+                onChange={(e) => setUseGemini(e.target.checked)}
+                className="mr-2"
+                disabled={isLoading}
+              />
+              <label htmlFor="useGemini" className="text-sm text-muted-foreground">
+                Use Google Gemini AI for enhanced analysis capabilities
+              </label>
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={!prompt.trim() || isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Running AI Analysis...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate AI Insight
+                </>
+              )}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

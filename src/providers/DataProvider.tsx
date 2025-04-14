@@ -20,6 +20,7 @@ interface Analysis {
   fileName: string;
   resultType: string;
   pythonBackendUsed?: boolean; // Added to track Python backend usage
+  geminiUsed?: boolean; // Added to track Gemini usage
 }
 
 interface DataContextType {

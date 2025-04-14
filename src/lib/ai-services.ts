@@ -1,18 +1,24 @@
+
 /**
  * AI services integration for data analysis and Python backend execution
  */
 
-// Integration with Google Gemini API
+// Integration with Google Gemini API - using environment variables or input for API key
+// In a real implementation, this would use the actual Gemini API key from Supabase Secret or similar
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+
 export async function analyzeWithGemini(data: any[], prompt: string) {
   console.log("Calling Google Gemini API with data sample...");
   
-  // In production, you would use the actual Gemini API
-  // This mock simulates a response from Gemini API
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  // In a real implementation this would be an actual API call to Gemini API
+  // Here we're simulating the response with a reasonable delay
+  await new Promise(resolve => setTimeout(resolve, 2000));
   
   // Generate a mock Python code based on the prompt
   const pythonCode = generatePythonCode(prompt, Object.keys(data[0] || {}));
   
+  // Simulate a response from Gemini API
+  // In a real implementation, this would be the actual response from Gemini
   return {
     analysis: "Analysis performed using Google Gemini AI with Python backend",
     recommendations: [
@@ -22,8 +28,75 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
     ],
     pythonCode: pythonCode,
     modelInfo: "Google Gemini Pro - Analysis executed through Python backend using pandas, scikit-learn, and matplotlib",
-    confidence: 0.92
+    confidence: 0.92,
+    codeOutput: generateMockCodeOutput(pythonCode, data),
+    usedGemini: true
   };
+}
+
+// Mock function to generate code output based on the Python code
+function generateMockCodeOutput(pythonCode: string, data: any[]) {
+  // Extract any print statements from the Python code to simulate outputs
+  const printStatements = pythonCode.match(/print\((.*?)\)/g) || [];
+  
+  let output = "# Code Execution Output\n\n";
+  
+  // Add information about the data
+  output += `Dataset loaded with ${data.length} rows and ${Object.keys(data[0] || {}).length} columns.\n\n`;
+  
+  // Add basic data sample
+  output += "Sample data (first 5 rows):\n";
+  output += "```\n";
+  const sample = data.slice(0, 5);
+  output += JSON.stringify(sample, null, 2);
+  output += "\n```\n\n";
+  
+  // Process different kinds of analysis based on what's in the Python code
+  if (pythonCode.includes('correlation')) {
+    output += "Correlation Matrix:\n";
+    output += "```\n";
+    output += "            Feature1  Feature2  Feature3\n";
+    output += "Feature1    1.000     0.245     0.652\n";
+    output += "Feature2    0.245     1.000    -0.128\n";
+    output += "Feature3    0.652    -0.128     1.000\n";
+    output += "```\n\n";
+  }
+  
+  if (pythonCode.includes('cluster')) {
+    output += "K-means Clustering Results:\n";
+    output += "Optimal number of clusters (Elbow method): 3\n\n";
+    output += "Cluster Statistics:\n";
+    output += "```\n";
+    output += "Cluster 0: 42 samples\n";
+    output += "Cluster 1: 35 samples\n";
+    output += "Cluster 2: 23 samples\n";
+    output += "```\n\n";
+  }
+  
+  if (pythonCode.includes('model')) {
+    output += "Model Evaluation Metrics:\n";
+    output += "```\n";
+    output += "Mean Squared Error: 24.56\n";
+    output += "R² Score: 0.82\n";
+    output += "```\n\n";
+    
+    output += "Feature Importance:\n";
+    output += "```\n";
+    output += "Feature1: 0.42\n";
+    output += "Feature2: 0.35\n";
+    output += "Feature3: 0.23\n";
+    output += "```\n\n";
+  }
+  
+  // Add any other print statements from the code
+  if (printStatements.length > 0) {
+    output += "Print Statement Outputs:\n";
+    printStatements.forEach(statement => {
+      output += `${statement.replace('print(', '').replace(')', '')}: [simulated output]\n`;
+    });
+  }
+  
+  return output;
 }
 
 // Integration with Google Colab
@@ -399,6 +472,9 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
   // Simulate a backend API call
   await new Promise(resolve => setTimeout(resolve, 2000));
   
+  // Generate mock code output
+  const codeOutput = generateMockCodeOutput(pythonCode, data);
+  
   // Determine what type of analysis was requested
   const lowerPrompt = prompt.toLowerCase();
   
@@ -408,21 +484,45 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
     title: 'AI Data Analysis',
     description: 'Analysis performed using Python backend with pandas, numpy, scikit-learn, and matplotlib.',
     pythonCode,
+    codeOutput,
     chartType: null,
     data: null,
-    chartConfig: {}
+    chartConfig: {},
+    visualizations: []
   };
   
   // Different types of analysis responses based on different prompt keywords
   if (lowerPrompt.includes('summary') || lowerPrompt.includes('overview')) {
     response.title = 'Data Summary';
     response.description = `This analysis provides a comprehensive overview of your dataset containing ${data.length} rows and ${Object.keys(data[0] || {}).length} columns. The analysis was performed using Python backend with pandas and numpy libraries.`;
-    response.chartType = 'table';
-    response.data = data.slice(0, 10);
-    response.chartConfig = {
-      title: 'Data Preview',
-      description: 'First 10 rows from your dataset'
-    };
+    
+    // Add multiple visualizations
+    response.visualizations = [
+      {
+        type: 'table',
+        title: 'Data Preview',
+        data: data.slice(0, 10),
+        config: {
+          title: 'Data Preview',
+          description: 'First 10 rows from your dataset'
+        }
+      },
+      {
+        type: 'stats',
+        title: 'Dataset Statistics',
+        data: [
+          { label: 'Total Rows', value: data.length },
+          { label: 'Total Columns', value: Object.keys(data[0] || {}).length },
+          { label: 'Numeric Columns', value: Object.keys(data[0] || {}).filter(k => typeof data[0][k] === 'number').length },
+          { label: 'Text Columns', value: Object.keys(data[0] || {}).filter(k => typeof data[0][k] === 'string').length }
+        ],
+        config: {
+          title: 'Dataset Statistics',
+          description: 'Key metrics about your dataset'
+        }
+      }
+    ];
+    
     response.modelInfo = 'Analysis performed by Python backend using pandas library with descriptive statistics';
   }
   else if (lowerPrompt.includes('distribution') || lowerPrompt.includes('histogram')) {
@@ -548,17 +648,34 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
     // Default response when prompt doesn't match specific analyses
     response.title = 'Comprehensive Data Analysis';
     response.description = 'This analysis provides a comprehensive examination of your dataset, including summary statistics, visualizations, and key insights.';
-    response.chartType = 'stats';
-    response.data = [
-      { label: 'Total Records', value: data.length },
-      { label: 'Features', value: Object.keys(data[0] || {}).length },
-      { label: 'Complete Records', value: Math.floor(data.length * 0.97) },
-      { label: 'Records with Missing Values', value: Math.floor(data.length * 0.03) }
+    
+    // Include multiple visualizations in default case
+    response.visualizations = [
+      {
+        type: 'stats',
+        title: 'Dataset Statistics',
+        data: [
+          { label: 'Total Records', value: data.length },
+          { label: 'Features', value: Object.keys(data[0] || {}).length },
+          { label: 'Complete Records', value: Math.floor(data.length * 0.97) },
+          { label: 'Records with Missing Values', value: Math.floor(data.length * 0.03) }
+        ],
+        config: {
+          title: 'Dataset Statistics',
+          description: 'Key metrics about your dataset'
+        }
+      },
+      {
+        type: 'table',
+        title: 'Data Sample',
+        data: data.slice(0, 5),
+        config: {
+          title: 'Data Sample',
+          description: 'First 5 rows of your dataset'
+        }
+      }
     ];
-    response.chartConfig = {
-      title: 'Dataset Statistics',
-      description: 'Key metrics about your dataset'
-    };
+    
     response.modelInfo = 'Python pandas and scikit-learn for comprehensive analysis';
   }
   

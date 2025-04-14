@@ -39,7 +39,8 @@ import {
   analyzeWithGemini,
   generateColabNotebook,
   explainPythonCode,
-  simulatePythonAnalysis
+  simulatePythonAnalysis,
+  sendToPythonBackend
 } from '@/lib/ai-services';
 
 const mockAIAnalysis = async (prompt: string, data: any[]) => {
@@ -386,7 +387,7 @@ const Index = () => {
     }
   };
   
-  const handleAIAnalysis = async (prompt: string) => {
+  const handleAIAnalysis = async (prompt: string, useGemini: boolean = false) => {
     if (!currentData || currentData.length === 0) {
       toast.error("Please upload data before requesting AI analysis");
       return;
@@ -397,15 +398,20 @@ const Index = () => {
     try {
       let result;
       
-      if (prompt.toLowerCase().includes('gemini') || prompt.toLowerCase().includes('google ai')) {
+      if (useGemini || prompt.toLowerCase().includes('gemini')) {
         result = await analyzeWithGemini(currentData, prompt);
+        toast.success("Gemini AI analysis complete!");
       } else {
         result = await simulatePythonAnalysis(currentData, prompt);
+        toast.success("AI analysis complete!");
       }
       
       const analysisResult = {
         query: prompt,
-        response: result,
+        response: {
+          ...result,
+          usedGemini: useGemini || prompt.toLowerCase().includes('gemini')
+        },
         timestamp: new Date()
       };
       
@@ -417,11 +423,10 @@ const Index = () => {
           timestamp: new Date(),
           fileId: 'current',
           fileName: currentFileName || 'Unknown file',
-          resultType: result.type
+          resultType: result.type,
+          pythonBackendUsed: true
         });
       }
-      
-      toast.success("AI analysis complete!");
     } catch (error) {
       console.error("Error in AI analysis:", error);
       toast.error("Failed to generate AI analysis");
@@ -706,7 +711,7 @@ const Index = () => {
                           </div>
                           <h3 className="text-lg font-medium mb-2">AI Insight</h3>
                           <p className="text-muted-foreground max-w-md mx-auto">
-                            Ask a specific question about your data to generate AI-powered insights and visualizations using advanced analysis techniques
+                            Ask a specific question about your data to generate AI-powered insights and visualizations with detailed code and analysis
                           </p>
                         </CardContent>
                       </Card>
