@@ -228,330 +228,282 @@ function generatePythonCode(prompt: string, columns: string[]): string {
   const lowerPrompt = prompt.toLowerCase();
   
   // Basic imports that almost every analysis needs
-  let code = `import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn import preprocessing
-
-# Load the dataset
-df = pd.read_csv('dataset.csv')
-
-# Display basic information
-print(df.info())
-print("\\nSample data:")
-print(df.head())
-
-# Basic statistics
-print("\\nBasic statistics:")
-print(df.describe())
-
-`;
+  let code = "import pandas as pd\n" +
+    "import numpy as np\n" +
+    "import matplotlib.pyplot as plt\n" +
+    "import seaborn as sns\n" +
+    "from sklearn import preprocessing\n\n" +
+    "# Load the dataset\n" +
+    "df = pd.read_csv('dataset.csv')\n\n" +
+    "# Display basic information\n" +
+    "print(df.info())\n" +
+    "print(\"\\nSample data:\")\n" +
+    "print(df.head())\n\n" +
+    "# Basic statistics\n" +
+    "print(\"\\nBasic statistics:\")\n" +
+    "print(df.describe())\n\n";
 
   // Add code based on the prompt
   if (lowerPrompt.includes('summary') || lowerPrompt.includes('overview')) {
-    code += `
-# Generate summary statistics
-summary = df.describe(include='all').T
-missing_values = df.isnull().sum()
-print("\\nMissing values:")
-print(missing_values[missing_values > 0])
-
-# Data types and unique values
-print("\\nData types:")
-print(df.dtypes)
-for col in df.select_dtypes(include=['object']).columns:
-    print(f"\\nUnique values in {col}:")
-    print(df[col].value_counts().head(10))
-`;
+    code += "\n# Generate summary statistics\n" +
+      "summary = df.describe(include='all').T\n" +
+      "missing_values = df.isnull().sum()\n" +
+      "print(\"\\nMissing values:\")\n" +
+      "print(missing_values[missing_values > 0])\n\n" +
+      "# Data types and unique values\n" +
+      "print(\"\\nData types:\")\n" +
+      "print(df.dtypes)\n" +
+      "for col in df.select_dtypes(include=['object']).columns:\n" +
+      "    print(f\"\\nUnique values in {col}:\")\n" +
+      "    print(df[col].value_counts().head(10))\n";
   }
   
   if (lowerPrompt.includes('correlation') || lowerPrompt.includes('relationship')) {
-    code += `
-# Calculate correlation matrix
-numeric_df = df.select_dtypes(include=['number'])
-correlation_matrix = numeric_df.corr()
-print("\\nCorrelation Matrix:")
-print(correlation_matrix)
-
-# Plot correlation heatmap
-plt.figure(figsize=(12, 8))
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
-plt.title('Correlation Heatmap')
-plt.tight_layout()
-plt.show()
-`;
+    code += "\n# Calculate correlation matrix\n" +
+      "numeric_df = df.select_dtypes(include=['number'])\n" +
+      "correlation_matrix = numeric_df.corr()\n" +
+      "print(\"\\nCorrelation Matrix:\")\n" +
+      "print(correlation_matrix)\n\n" +
+      "# Plot correlation heatmap\n" +
+      "plt.figure(figsize=(12, 8))\n" +
+      "sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)\n" +
+      "plt.title('Correlation Heatmap')\n" +
+      "plt.tight_layout()\n" +
+      "plt.show()\n";
   }
   
   if (lowerPrompt.includes('distribution') || lowerPrompt.includes('histogram')) {
-    code += `
-# Plot distributions of numeric columns
-numeric_columns = df.select_dtypes(include=['number']).columns
-num_cols = len(numeric_columns)
-fig_rows = (num_cols + 1) // 2  # Calculate number of rows needed
-
-plt.figure(figsize=(15, 5 * fig_rows))
-for i, column in enumerate(numeric_columns):
-    plt.subplot(fig_rows, 2, i+1)
-    sns.histplot(df[column], kde=True)
-    plt.title(f'Distribution of {column}')
-plt.tight_layout()
-plt.show()
-`;
+    code += "\n# Plot distributions of numeric columns\n" +
+      "numeric_columns = df.select_dtypes(include=['number']).columns\n" +
+      "num_cols = len(numeric_columns)\n" +
+      "fig_rows = (num_cols + 1) // 2  # Calculate number of rows needed\n\n" +
+      "plt.figure(figsize=(15, 5 * fig_rows))\n" +
+      "for i, column in enumerate(numeric_columns):\n" +
+      "    plt.subplot(fig_rows, 2, i+1)\n" +
+      "    sns.histplot(df[column], kde=True)\n" +
+      "    plt.title(f'Distribution of {column}')\n" +
+      "plt.tight_layout()\n" +
+      "plt.show()\n";
   }
   
   if (lowerPrompt.includes('clustering') || lowerPrompt.includes('segment')) {
-    code += `
-# K-means clustering
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-
-# Select numeric features for clustering
-features = df.select_dtypes(include=['number']).dropna()
-
-# Standardize the features
-scaler = StandardScaler()
-scaled_features = scaler.fit_transform(features)
-
-# Determine optimal number of clusters using elbow method
-wcss = []
-for i in range(1, 11):
-    kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)
-    kmeans.fit(scaled_features)
-    wcss.append(kmeans.inertia_)
-
-# Plot elbow curve
-plt.figure(figsize=(10, 6))
-plt.plot(range(1, 11), wcss, marker='o')
-plt.title('Elbow Method for Optimal Clusters')
-plt.xlabel('Number of Clusters')
-plt.ylabel('WCSS')
-plt.grid(True)
-plt.show()
-
-# Apply K-means with determined number of clusters (example: 3)
-kmeans = KMeans(n_clusters=3, init='k-means++', random_state=42)
-cluster_labels = kmeans.fit_predict(scaled_features)
-
-# Add cluster labels to original dataframe
-df_with_clusters = df.copy()
-df_with_clusters['Cluster'] = cluster_labels
-
-# Analyze clusters
-cluster_summary = df_with_clusters.groupby('Cluster').mean()
-print("\\nCluster summary:")
-print(cluster_summary)
-`;
+    code += "\n# K-means clustering\n" +
+      "from sklearn.cluster import KMeans\n" +
+      "from sklearn.preprocessing import StandardScaler\n\n" +
+      "# Select numeric features for clustering\n" +
+      "features = df.select_dtypes(include=['number']).dropna()\n\n" +
+      "# Standardize the features\n" +
+      "scaler = StandardScaler()\n" +
+      "scaled_features = scaler.fit_transform(features)\n\n" +
+      "# Determine optimal number of clusters using elbow method\n" +
+      "wcss = []\n" +
+      "for i in range(1, 11):\n" +
+      "    kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)\n" +
+      "    kmeans.fit(scaled_features)\n" +
+      "    wcss.append(kmeans.inertia_)\n\n" +
+      "# Plot elbow curve\n" +
+      "plt.figure(figsize=(10, 6))\n" +
+      "plt.plot(range(1, 11), wcss, marker='o')\n" +
+      "plt.title('Elbow Method for Optimal Clusters')\n" +
+      "plt.xlabel('Number of Clusters')\n" +
+      "plt.ylabel('WCSS')\n" +
+      "plt.grid(True)\n" +
+      "plt.show()\n\n" +
+      "# Apply K-means with determined number of clusters (example: 3)\n" +
+      "kmeans = KMeans(n_clusters=3, init='k-means++', random_state=42)\n" +
+      "cluster_labels = kmeans.fit_predict(scaled_features)\n\n" +
+      "# Add cluster labels to original dataframe\n" +
+      "df_with_clusters = df.copy()\n" +
+      "df_with_clusters['Cluster'] = cluster_labels\n\n" +
+      "# Analyze clusters\n" +
+      "cluster_summary = df_with_clusters.groupby('Cluster').mean()\n" +
+      "print(\"\\nCluster summary:\")\n" +
+      "print(cluster_summary)\n";
   }
   
   if (lowerPrompt.includes('prediction') || lowerPrompt.includes('forecast') || lowerPrompt.includes('model')) {
     // Get a potential target variable
     const potentialTarget = columns[columns.length - 1];
     
-    code += `
-# Prediction model
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
-
-# Prepare data for modeling
-X = df.select_dtypes(include=['number']).drop(['${potentialTarget}'], axis=1, errors='ignore').fillna(0)
-y = df['${potentialTarget}']  # Assuming this is the target variable
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Train model
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
-
-# Make predictions
-y_pred = model.predict(X_test)
-
-# Evaluate model
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-print(f"\\nModel Evaluation:")
-print(f"Mean Squared Error: {mse:.2f}")
-print(f"R² Score: {r2:.2f}")
-
-# Feature importance
-feature_importance = pd.DataFrame(
-    {'Feature': X.columns, 'Importance': model.feature_importances_}
-).sort_values('Importance', ascending=False)
-
-print("\\nFeature Importance:")
-print(feature_importance)
-
-# Plot feature importance
-plt.figure(figsize=(10, 6))
-sns.barplot(x='Importance', y='Feature', data=feature_importance)
-plt.title('Feature Importance')
-plt.tight_layout()
-plt.show()
-`;
+    code += "\n# Prediction model\n" +
+      "from sklearn.model_selection import train_test_split\n" +
+      "from sklearn.ensemble import RandomForestRegressor\n" +
+      "from sklearn.metrics import mean_squared_error, r2_score\n\n" +
+      `# Prepare data for modeling\n` +
+      `X = df.select_dtypes(include=['number']).drop(['${potentialTarget}'], axis=1, errors='ignore').fillna(0)\n` +
+      `y = df['${potentialTarget}']  # Assuming this is the target variable\n\n` +
+      "# Split data\n" +
+      "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n\n" +
+      "# Train model\n" +
+      "model = RandomForestRegressor(n_estimators=100, random_state=42)\n" +
+      "model.fit(X_train, y_train)\n\n" +
+      "# Make predictions\n" +
+      "y_pred = model.predict(X_test)\n\n" +
+      "# Evaluate model\n" +
+      "mse = mean_squared_error(y_test, y_pred)\n" +
+      "r2 = r2_score(y_test, y_pred)\n\n" +
+      "print(f\"\\nModel Evaluation:\")\n" +
+      "print(f\"Mean Squared Error: {mse:.2f}\")\n" +
+      "print(f\"R² Score: {r2:.2f}\")\n\n" +
+      "# Feature importance\n" +
+      "feature_importance = pd.DataFrame(\n" +
+      "    {'Feature': X.columns, 'Importance': model.feature_importances_}\n" +
+      ").sort_values('Importance', ascending=False)\n\n" +
+      "print(\"\\nFeature Importance:\")\n" +
+      "print(feature_importance)\n\n" +
+      "# Plot feature importance\n" +
+      "plt.figure(figsize=(10, 6))\n" +
+      "sns.barplot(x='Importance', y='Feature', data=feature_importance)\n" +
+      "plt.title('Feature Importance')\n" +
+      "plt.tight_layout()\n" +
+      "plt.show()\n";
   }
   
   if (lowerPrompt.includes('anomaly') || lowerPrompt.includes('outlier')) {
-    code += `
-# Anomaly detection using Isolation Forest
-from sklearn.ensemble import IsolationForest
-
-# Select numeric features
-numeric_data = df.select_dtypes(include=['number']).dropna()
-
-# Apply Isolation Forest
-isolation_forest = IsolationForest(contamination=0.05, random_state=42)
-outliers = isolation_forest.fit_predict(numeric_data)
-
-# Add outlier information to dataframe
-df_with_outliers = df.copy()
-df_with_outliers['is_outlier'] = np.where(outliers == -1, 'Outlier', 'Normal')
-
-# Count outliers
-outlier_count = (outliers == -1).sum()
-print(f"\\nNumber of detected outliers: {outlier_count}")
-
-# Analyze outliers
-outlier_df = df_with_outliers[df_with_outliers['is_outlier'] == 'Outlier']
-print("\\nOutlier statistics:")
-print(outlier_df.describe())
-
-# Visualize outliers for a numeric column (first numeric column)
-numeric_col = numeric_data.columns[0]
-plt.figure(figsize=(10, 6))
-sns.boxplot(x='is_outlier', y=numeric_col, data=df_with_outliers)
-plt.title(f'Outlier Analysis for {numeric_col}')
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
-`;
+    code += "\n# Anomaly detection using Isolation Forest\n" +
+      "from sklearn.ensemble import IsolationForest\n\n" +
+      "# Select numeric features\n" +
+      "numeric_data = df.select_dtypes(include=['number']).dropna()\n\n" +
+      "# Apply Isolation Forest\n" +
+      "isolation_forest = IsolationForest(contamination=0.05, random_state=42)\n" +
+      "outliers = isolation_forest.fit_predict(numeric_data)\n\n" +
+      "# Add outlier information to dataframe\n" +
+      "df_with_outliers = df.copy()\n" +
+      "df_with_outliers['is_outlier'] = np.where(outliers == -1, 'Outlier', 'Normal')\n\n" +
+      "# Count outliers\n" +
+      "outlier_count = (outliers == -1).sum()\n" +
+      "print(f\"\\nNumber of detected outliers: {outlier_count}\")\n\n" +
+      "# Analyze outliers\n" +
+      "outlier_df = df_with_outliers[df_with_outliers['is_outlier'] == 'Outlier']\n" +
+      "print(\"\\nOutlier statistics:\")\n" +
+      "print(outlier_df.describe())\n\n" +
+      "# Visualize outliers for a numeric column (first numeric column)\n" +
+      "numeric_col = numeric_data.columns[0]\n" +
+      "plt.figure(figsize=(10, 6))\n" +
+      "sns.boxplot(x='is_outlier', y=numeric_col, data=df_with_outliers)\n" +
+      "plt.title(f'Outlier Analysis for {numeric_col}')\n" +
+      "plt.xticks(rotation=45)\n" +
+      "plt.tight_layout()\n" +
+      "plt.show()\n";
   }
   
   if (lowerPrompt.includes('time') || lowerPrompt.includes('trend') || lowerPrompt.includes('series')) {
-    code += `
-# Time series analysis
-# Assuming there's a date/time column
-try:
-    # Find potential date columns
-    date_columns = []
-    for col in df.columns:
-        if 'date' in col.lower() or 'time' in col.lower() or 'day' in col.lower():
-            date_columns.append(col)
-    
-    if date_columns:
-        date_col = date_columns[0]  # Use the first detected date column
-        print(f"\\nDetected date column: {date_col}")
-        
-        # Convert to datetime
-        df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
-        
-        # Set as index
-        ts_df = df.set_index(date_col)
-        
-        # Get numeric columns
-        numeric_cols = ts_df.select_dtypes(include=['number']).columns
-        
-        # Resample by month and plot
-        if len(numeric_cols) > 0:
-            numeric_col = numeric_cols[0]
-            monthly_data = ts_df[numeric_col].resample('M').mean()
-            
-            plt.figure(figsize=(12, 6))
-            monthly_data.plot()
-            plt.title(f'Monthly Trend of {numeric_col}')
-            plt.ylabel(numeric_col)
-            plt.grid(True)
-            plt.tight_layout()
-            plt.show()
-            
-            # Check seasonality with decomposition
-            print("\\nTime Series Decomposition:")
-            from statsmodels.tsa.seasonal import seasonal_decompose
-            
-            # Only if we have enough data points
-            if len(monthly_data) >= 12:
-                decomposition = seasonal_decompose(monthly_data, model='additive', period=12)
-                
-                plt.figure(figsize=(12, 10))
-                plt.subplot(411)
-                plt.plot(decomposition.observed)
-                plt.title('Observed')
-                plt.subplot(412)
-                plt.plot(decomposition.trend)
-                plt.title('Trend')
-                plt.subplot(413)
-                plt.plot(decomposition.seasonal)
-                plt.title('Seasonal')
-                plt.subplot(414)
-                plt.plot(decomposition.resid)
-                plt.title('Residual')
-                plt.tight_layout()
-                plt.show()
-    else:
-        print("No date/time columns detected for time series analysis")
-except Exception as e:
-    print(f"Could not perform time series analysis: {str(e)}")
-`;
+    code += "\n# Time series analysis\n" +
+      "# Assuming there's a date/time column\n" +
+      "try:\n" +
+      "    # Find potential date columns\n" +
+      "    date_columns = []\n" +
+      "    for col in df.columns:\n" +
+      "        if 'date' in col.lower() or 'time' in col.lower() or 'day' in col.lower():\n" +
+      "            date_columns.append(col)\n" +
+      "    \n" +
+      "    if date_columns:\n" +
+      "        date_col = date_columns[0]  # Use the first detected date column\n" +
+      "        print(f\"\\nDetected date column: {date_col}\")\n" +
+      "        \n" +
+      "        # Convert to datetime\n" +
+      "        df[date_col] = pd.to_datetime(df[date_col], errors='coerce')\n" +
+      "        \n" +
+      "        # Set as index\n" +
+      "        ts_df = df.set_index(date_col)\n" +
+      "        \n" +
+      "        # Get numeric columns\n" +
+      "        numeric_cols = ts_df.select_dtypes(include=['number']).columns\n" +
+      "        \n" +
+      "        # Resample by month and plot\n" +
+      "        if len(numeric_cols) > 0:\n" +
+      "            numeric_col = numeric_cols[0]\n" +
+      "            monthly_data = ts_df[numeric_col].resample('M').mean()\n" +
+      "            \n" +
+      "            plt.figure(figsize=(12, 6))\n" +
+      "            monthly_data.plot()\n" +
+      "            plt.title(f'Monthly Trend of {numeric_col}')\n" +
+      "            plt.ylabel(numeric_col)\n" +
+      "            plt.grid(True)\n" +
+      "            plt.tight_layout()\n" +
+      "            plt.show()\n" +
+      "            \n" +
+      "            # Check seasonality with decomposition\n" +
+      "            print(\"\\nTime Series Decomposition:\")\n" +
+      "            from statsmodels.tsa.seasonal import seasonal_decompose\n" +
+      "            \n" +
+      "            # Only if we have enough data points\n" +
+      "            if len(monthly_data) >= 12:\n" +
+      "                decomposition = seasonal_decompose(monthly_data, model='additive', period=12)\n" +
+      "                \n" +
+      "                plt.figure(figsize=(12, 10))\n" +
+      "                plt.subplot(411)\n" +
+      "                plt.plot(decomposition.observed)\n" +
+      "                plt.title('Observed')\n" +
+      "                plt.subplot(412)\n" +
+      "                plt.plot(decomposition.trend)\n" +
+      "                plt.title('Trend')\n" +
+      "                plt.subplot(413)\n" +
+      "                plt.plot(decomposition.seasonal)\n" +
+      "                plt.title('Seasonal')\n" +
+      "                plt.subplot(414)\n" +
+      "                plt.plot(decomposition.resid)\n" +
+      "                plt.title('Residual')\n" +
+      "                plt.tight_layout()\n" +
+      "                plt.show()\n" +
+      "    else:\n" +
+      "        print(\"No date/time columns detected for time series analysis\")\n" +
+      "except Exception as e:\n" +
+      "    print(f\"Could not perform time series analysis: {str(e)}\")\n";
   }
   
   if (lowerPrompt.includes('nlp') || lowerPrompt.includes('text') || lowerPrompt.includes('natural language')) {
-    code += `
-# NLP analysis
-from sklearn.feature_extraction.text import CountVectorizer
-from wordcloud import WordCloud
-
-# Find potential text columns
-text_columns = []
-for col in df.columns:
-    if df[col].dtype == 'object':
-        # Check if column has string values
-        if df[col].fillna('').astype(str).str.len().mean() > 10:
-            text_columns.append(col)
-
-if text_columns:
-    text_col = text_columns[0]  # Use first text column
-    print(f"\\nAnalyzing text column: {text_col}")
-    
-    # Clean text
-    df['clean_text'] = df[text_col].fillna('').astype(str).str.lower()
-    
-    # Create word cloud
-    all_text = ' '.join(df['clean_text'])
-    wordcloud = WordCloud(width=800, height=400, background_color='white', max_words=100).generate(all_text)
-    
-    plt.figure(figsize=(10, 6))
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis('off')
-    plt.title(f'Word Cloud for {text_col}')
-    plt.tight_layout()
-    plt.show()
-    
-    # Count most common words
-    vectorizer = CountVectorizer(stop_words='english', max_features=20)
-    X = vectorizer.fit_transform(df['clean_text'])
-    
-    # Get top words and their counts
-    words = vectorizer.get_feature_names_out()
-    counts = X.sum(axis=0).A1
-    
-    # Create DataFrame for top words
-    top_words = pd.DataFrame({'word': words, 'count': counts})
-    top_words = top_words.sort_values('count', ascending=False)
-    
-    print("\\nTop words:")
-    print(top_words)
-    
-    # Plot top words
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x='count', y='word', data=top_words)
-    plt.title(f'Top Words in {text_col}')
-    plt.tight_layout()
-    plt.show()
-else:
-    print("No suitable text columns detected for NLP analysis")
-`;
+    code += "\n# NLP analysis\n" +
+      "from sklearn.feature_extraction.text import CountVectorizer\n" +
+      "from wordcloud import WordCloud\n\n" +
+      "# Find potential text columns\n" +
+      "text_columns = []\n" +
+      "for col in df.columns:\n" +
+      "    if df[col].dtype == 'object':\n" +
+      "        # Check if column has string values\n" +
+      "        if df[col].fillna('').astype(str).str.len().mean() > 10:\n" +
+      "            text_columns.append(col)\n\n" +
+      "if text_columns:\n" +
+      "    text_col = text_columns[0]  # Use first text column\n" +
+      "    print(f\"\\nAnalyzing text column: {text_col}\")\n" +
+      "    \n" +
+      "    # Clean text\n" +
+      "    df['clean_text'] = df[text_col].fillna('').astype(str).str.lower()\n" +
+      "    \n" +
+      "    # Create word cloud\n" +
+      "    all_text = ' '.join(df['clean_text'])\n" +
+      "    wordcloud = WordCloud(width=800, height=400, background_color='white', max_words=100).generate(all_text)\n" +
+      "    \n" +
+      "    plt.figure(figsize=(10, 6))\n" +
+      "    plt.imshow(wordcloud, interpolation='bilinear')\n" +
+      "    plt.axis('off')\n" +
+      "    plt.title(f'Word Cloud for {text_col}')\n" +
+      "    plt.tight_layout()\n" +
+      "    plt.show()\n" +
+      "    \n" +
+      "    # Count most common words\n" +
+      "    vectorizer = CountVectorizer(stop_words='english', max_features=20)\n" +
+      "    X = vectorizer.fit_transform(df['clean_text'])\n" +
+      "    \n" +
+      "    # Get top words and their counts\n" +
+      "    words = vectorizer.get_feature_names_out()\n" +
+      "    counts = X.sum(axis=0).A1\n" +
+      "    \n" +
+      "    # Create DataFrame for top words\n" +
+      "    top_words = pd.DataFrame({'word': words, 'count': counts})\n" +
+      "    top_words = top_words.sort_values('count', ascending=False)\n" +
+      "    \n" +
+      "    print(\"\\nTop words:\")\n" +
+      "    print(top_words)\n" +
+      "    \n" +
+      "    # Plot top words\n" +
+      "    plt.figure(figsize=(10, 6))\n" +
+      "    sns.barplot(x='count', y='word', data=top_words)\n" +
+      "    plt.title(f'Top Words in {text_col}')\n" +
+      "    plt.tight_layout()\n" +
+      "    plt.show()\n" +
+      "else:\n" +
+      "    print(\"No suitable text columns detected for NLP analysis\")\n";
   }
 
   return code;
