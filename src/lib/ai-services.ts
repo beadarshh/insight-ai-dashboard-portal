@@ -329,9 +329,9 @@ function generatePythonCode(prompt: string, columns: string[]): string {
       "from sklearn.model_selection import train_test_split\n" +
       "from sklearn.ensemble import RandomForestRegressor\n" +
       "from sklearn.metrics import mean_squared_error, r2_score\n\n" +
-      `# Prepare data for modeling\n` +
-      `X = df.select_dtypes(include=['number']).drop(['${potentialTarget}'], axis=1, errors='ignore').fillna(0)\n` +
-      `y = df['${potentialTarget}']  # Assuming this is the target variable\n\n` +
+      "# Prepare data for modeling\n" +
+      "X = df.select_dtypes(include=['number']).drop(['" + potentialTarget + "'], axis=1, errors='ignore').fillna(0)\n" +
+      "y = df['" + potentialTarget + "']  # Assuming this is the target variable\n\n" +
       "# Split data\n" +
       "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n\n" +
       "# Train model\n" +
@@ -622,125 +622,4 @@ export async function simulatePythonAnalysis(data: any[], prompt: string) {
       response.modelInfo = 'Python pandas correlation analysis with scipy.stats';
     }
   }
-  else if (lowerPrompt.includes('clustering') || lowerPrompt.includes('segment')) {
-    response.title = 'K-means Clustering Analysis';
-    response.description = 'This analysis performs K-means clustering to identify natural groupings in the data. The algorithm identified 3 distinct clusters based on the numeric variables in the dataset.';
-    response.chartType = 'pie';
-    response.data = [
-      { name: 'Cluster 1', value: Math.floor(data.length * 0.4) },
-      { name: 'Cluster 2', value: Math.floor(data.length * 0.35) },
-      { name: 'Cluster 3', value: Math.floor(data.length * 0.25) }
-    ];
-    response.chartConfig = {
-      title: 'Cluster Distribution',
-      description: 'Distribution of data points across clusters'
-    };
-    response.modelInfo = 'Python scikit-learn K-means clustering with scikit-learn';
-  }
-  else if (lowerPrompt.includes('prediction') || lowerPrompt.includes('forecast') || lowerPrompt.includes('model')) {
-    const numericColumns = Object.keys(data[0] || {}).filter(key => typeof data[0][key] === 'number');
-    if (numericColumns.length > 0) {
-      const targetColumn = numericColumns[numericColumns.length - 1];
-      
-      response.title = `Predictive Model for ${targetColumn}`;
-      response.description = `This analysis builds a Random Forest Regression model to predict ${targetColumn} based on other numeric features. The model achieves an R² score of 0.83, indicating good predictive power.`;
-      response.chartType = 'stats';
-      response.data = [
-        { label: 'R² Score', value: 0.83 },
-        { label: 'Mean Squared Error', value: 245.67 },
-        { label: 'Mean Absolute Error', value: 12.34 },
-        { label: 'Training Samples', value: Math.floor(data.length * 0.8) },
-        { label: 'Testing Samples', value: Math.floor(data.length * 0.2) }
-      ];
-      response.chartConfig = {
-        title: 'Model Evaluation Metrics',
-        description: 'Performance metrics for the predictive model'
-      };
-      response.modelInfo = 'Python Random Forest Regression from scikit-learn';
-    }
-  }
-  else if (lowerPrompt.includes('anomaly') || lowerPrompt.includes('outlier')) {
-    response.title = 'Anomaly Detection';
-    response.description = 'This analysis uses Isolation Forest algorithm to detect anomalies in the dataset. The analysis identified outliers that deviate significantly from the normal patterns in the data.';
-    response.chartType = 'stats';
-    response.data = [
-      { label: 'Total Records', value: data.length },
-      { label: 'Normal Records', value: Math.floor(data.length * 0.95) },
-      { label: 'Outliers Detected', value: Math.floor(data.length * 0.05) },
-      { label: 'Contamination Rate', value: '5%' }
-    ];
-    response.chartConfig = {
-      title: 'Anomaly Detection Results',
-      description: 'Summary of the outlier detection process'
-    };
-    response.modelInfo = 'Python Isolation Forest from scikit-learn';
-  }
-  else if (lowerPrompt.includes('nlp') || lowerPrompt.includes('text') || lowerPrompt.includes('natural language')) {
-    response.title = 'Natural Language Processing Analysis';
-    response.description = 'This analysis applies NLP techniques to extract insights from text columns in the dataset. The analysis includes word frequency analysis, sentiment detection, and topic modeling.';
-    response.chartType = 'table';
-    response.data = [
-      { "Word": "data", "Frequency": 156, "TF-IDF Score": 0.85 },
-      { "Word": "analysis", "Frequency": 142, "TF-IDF Score": 0.82 },
-      { "Word": "product", "Frequency": 98, "TF-IDF Score": 0.76 },
-      { "Word": "customer", "Frequency": 87, "TF-IDF Score": 0.74 },
-      { "Word": "service", "Frequency": 72, "TF-IDF Score": 0.71 }
-    ];
-    response.chartConfig = {
-      title: 'Top Words by Frequency',
-      description: 'Most common words found in the text data'
-    };
-    response.modelInfo = 'Python NLP analysis using NLTK and scikit-learn';
-  }
-  else {
-    // Default response when prompt doesn't match specific analyses
-    response.title = 'Comprehensive Data Analysis';
-    response.description = 'This analysis provides a comprehensive examination of your dataset, including summary statistics, visualizations, and key insights.';
-    
-    // Include multiple visualizations in default case
-    response.visualizations = [
-      {
-        type: 'stats',
-        title: 'Dataset Statistics',
-        data: [
-          { label: 'Total Records', value: data.length },
-          { label: 'Features', value: Object.keys(data[0] || {}).length },
-          { label: 'Complete Records', value: Math.floor(data.length * 0.97) },
-          { label: 'Records with Missing Values', value: Math.floor(data.length * 0.03) }
-        ],
-        config: {
-          title: 'Dataset Statistics',
-          description: 'Key metrics about your dataset'
-        }
-      },
-      {
-        type: 'table',
-        title: 'Data Sample',
-        data: data.slice(0, 5),
-        config: {
-          title: 'Data Sample',
-          description: 'First 5 rows of your dataset'
-        }
-      }
-    ];
-    
-    response.modelInfo = 'Python pandas and scikit-learn for comprehensive analysis';
-  }
-  
-  return response;
-}
-
-// Mock function to simulate sending data to Python backend for processing
-export async function sendToPythonBackend(data: any[], operation: string) {
-  console.log(`Sending data to Python backend for ${operation}...`);
-  
-  // In a real implementation, this would be an API call to a Python backend service
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  return {
-    status: "success",
-    message: `Data successfully processed with ${operation} on Python backend`,
-    processingTime: "2.3 seconds",
-    backendInfo: "Python 3.10, pandas 2.0.3, scikit-learn 1.3.0"
-  };
-}
+  else
