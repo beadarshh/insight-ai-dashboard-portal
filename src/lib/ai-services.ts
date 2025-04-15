@@ -58,13 +58,17 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
     // Generate mock code output
     const codeOutput = generateMockCodeOutput(pythonCode, data);
     
+    // Calculate confidence based on response characteristics
+    const confidenceMetrics = calculateConfidence(responseText, data);
+    
     // Return the analysis result
     return {
       analysis: responseText,
       recommendations: extractRecommendations(responseText),
       pythonCode: pythonCode,
       modelInfo: "Google Gemini Pro - Analysis executed through Python backend using pandas, scikit-learn, and matplotlib",
-      confidence: 0.92,
+      confidence: confidenceMetrics.overallConfidence,
+      confidenceBreakdown: confidenceMetrics,
       codeOutput: codeOutput,
       usedGemini: true
     };
@@ -87,7 +91,12 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
       ],
       pythonCode: pythonCode,
       modelInfo: "Google Gemini Pro - Analysis executed through Python backend using pandas, scikit-learn, and matplotlib",
-      confidence: 0.92,
+      confidence: 0.65,
+      confidenceBreakdown: {
+        responseQuality: 0.7,
+        dataRelevance: 0.6,
+        technicalAccuracy: 0.6
+      },
       codeOutput: generateMockCodeOutput(pythonCode, data),
       usedGemini: true,
       error: String(error)
@@ -97,7 +106,7 @@ export async function analyzeWithGemini(data: any[], prompt: string) {
 
 // Helper function to extract recommendations from Gemini response
 function extractRecommendations(text: string): string[] {
-  // Look for patterns like "Recommendations:", "Key findings:", "Insights:", etc.
+  // Look for patterns like "Recommendations:", "Key Findings:|Insights:", etc.
   const sections = text.split(/Recommendations:|Key Findings:|Insights:|Suggestions:|Next Steps:/i);
   
   if (sections.length > 1) {
@@ -747,5 +756,52 @@ export async function sendToPythonBackend(data: any[], operation: string) {
     message: "Data successfully processed with " + operation + " on Python backend",
     processingTime: "2.3 seconds",
     backendInfo: "Python 3.10, pandas 2.0.3, scikit-learn 1.3.0"
+  };
+}
+
+// New function to calculate confidence metrics
+function calculateConfidence(responseText: string, data: any[]): {
+  overallConfidence: number;
+  responseQuality: number;
+  dataRelevance: number;
+  technicalAccuracy: number;
+} {
+  // Calculate response quality based on length and specificity
+  const responseQuality = Math.min(
+    1, 
+    Math.max(0.3, responseText.length / 500)
+  );
+
+  // Calculate data relevance
+  const dataRelevance = Math.min(
+    1,
+    Math.max(0.4, Object.keys(data[0] || {}).length / 10)
+  );
+
+  // Check technical accuracy by looking for specific technical terms
+  const technicalTerms = [
+    'correlation', 'regression', 'clustering', 
+    'statistical', 'analysis', 'data', 'pattern'
+  ];
+  const technicalTermsFound = technicalTerms.filter(term => 
+    responseText.toLowerCase().includes(term)
+  ).length;
+  const technicalAccuracy = Math.min(
+    1, 
+    Math.max(0.5, technicalTermsFound / technicalTerms.length)
+  );
+
+  // Calculate overall confidence
+  const overallConfidence = (
+    responseQuality * 0.4 + 
+    dataRelevance * 0.3 + 
+    technicalAccuracy * 0.3
+  );
+
+  return {
+    overallConfidence: Number(overallConfidence.toFixed(2)),
+    responseQuality: Number(responseQuality.toFixed(2)),
+    dataRelevance: Number(dataRelevance.toFixed(2)),
+    technicalAccuracy: Number(technicalAccuracy.toFixed(2))
   };
 }
