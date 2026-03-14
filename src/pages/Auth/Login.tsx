@@ -49,10 +49,9 @@ const Login = () => {
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="Enter your email" 
+                  placeholder="Enter your email (optional)" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
                   disabled={isLoading}
                 />
               </div>
