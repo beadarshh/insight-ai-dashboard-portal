@@ -22,7 +22,9 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      const loginEmail = email || 'demo@example.com';
+      const loginPassword = password || 'password';
+      await login(loginEmail, loginPassword);
       toast.success('Login successful!');
       navigate('/');
     } catch (error: any) {
@@ -47,10 +49,9 @@ const Login = () => {
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="Enter your email" 
+                  placeholder="Enter your email (optional)" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
                   disabled={isLoading}
                 />
               </div>
@@ -64,10 +65,9 @@ const Login = () => {
                 <Input 
                   id="password" 
                   type="password" 
-                  placeholder="Enter your password" 
+                  placeholder="Enter your password (optional)" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                   disabled={isLoading}
                 />
               </div>
