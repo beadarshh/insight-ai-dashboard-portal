@@ -65,10 +65,9 @@ const Login = () => {
                 <Input 
                   id="password" 
                   type="password" 
-                  placeholder="Enter your password" 
+                  placeholder="Enter your password (optional)" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                   disabled={isLoading}
                 />
               </div>
